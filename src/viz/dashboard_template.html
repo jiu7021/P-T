@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P&T 불량 분석 워크벤치</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --border:#d8dce2; --text:#1a1d21; --muted:#5b6470;
+  --accent:#1f6feb; --ok:#1a7f37; --warn:#9a6700; --bad:#cf222e;
+  --die-out:#e6e8ec; --die-pass:#3d6fb4; --die-fail:#d63b3b;
+  --chip-real:#0f5132; --chip-real-bg:#d1e7dd;
+  --chip-syn:#664d03; --chip-syn-bg:#fff3cd;
+  --chip-look:#055160; --chip-look-bg:#cff4fc;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1117; --panel:#161b22; --border:#30363d; --text:#e6edf3; --muted:#9198a1;
+    --accent:#4493f8; --ok:#3fb950; --warn:#d29922; --bad:#f85149;
+    --die-out:#21262d; --die-pass:#4c8ee0; --die-fail:#f0553f;
+    --chip-real:#7ee2a8; --chip-real-bg:#0f2d1d;
+    --chip-syn:#f0d585; --chip-syn-bg:#2e2510;
+    --chip-look:#8ad9ea; --chip-look-bg:#0b2b33;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1117; --panel:#161b22; --border:#30363d; --text:#e6edf3; --muted:#9198a1;
+  --accent:#4493f8; --ok:#3fb950; --warn:#d29922; --bad:#f85149;
+  --die-out:#21262d; --die-pass:#4c8ee0; --die-fail:#f0553f;
+  --chip-real:#7ee2a8; --chip-real-bg:#0f2d1d;
+  --chip-syn:#f0d585; --chip-syn-bg:#2e2510;
+  --chip-look:#8ad9ea; --chip-look-bg:#0b2b33;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:14px/1.6 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+header{padding:18px 22px;border-bottom:1px solid var(--border);background:var(--panel)}
+h1{margin:0 0 6px;font-size:19px;letter-spacing:-.2px}
+.sub{color:var(--muted);font-size:13px}
+.chips{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:11.5px;padding:2.5px 9px;border-radius:11px;font-weight:600;white-space:nowrap}
+.chip.real{color:var(--chip-real);background:var(--chip-real-bg)}
+.chip.syn{color:var(--chip-syn);background:var(--chip-syn-bg)}
+.chip.look{color:var(--chip-look);background:var(--chip-look-bg)}
+nav{display:flex;gap:2px;padding:0 16px;background:var(--panel);border-bottom:1px solid var(--border);
+  overflow-x:auto}
+nav button{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);
+  padding:11px 15px;font-size:14px;cursor:pointer;font-family:inherit;white-space:nowrap}
+nav button.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+main{padding:18px 22px;max-width:1500px}
+.tab{display:none}.tab.on{display:block}
+.grid{display:grid;gap:16px}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:14px}
+.panel h3{margin:0 0 10px;font-size:14px;letter-spacing:-.1px}
+.notice{background:var(--chip-look-bg);color:var(--chip-look);border-radius:7px;padding:9px 12px;
+  font-size:12.5px;font-weight:600;margin-bottom:14px;border:1px solid transparent}
+.warnbox{background:var(--chip-syn-bg);color:var(--chip-syn);border-radius:7px;padding:9px 12px;
+  font-size:12.5px;margin-bottom:14px}
+select,input[type=range],button.act{font-family:inherit;font-size:13px}
+select{background:var(--panel);color:var(--text);border:1px solid var(--border);
+  border-radius:6px;padding:6px 9px;width:100%}
+button.act{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 13px;cursor:pointer}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{border-bottom:1px solid var(--border);padding:5px 7px;text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:600}
+canvas{image-rendering:pixelated;border:1px solid var(--border);border-radius:6px;background:var(--panel);
+  max-width:100%}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12.5px}
+.kv b{font-weight:600;color:var(--muted)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.cand{border:1px solid var(--border);border-radius:7px;padding:10px 12px;margin-bottom:9px}
+.cand .proc{font-weight:700;font-size:13.5px}
+.cand .rat{font-size:12.5px;margin:5px 0}
+.cand .ref{font-size:11px;color:var(--muted);word-break:break-word;margin-top:3px}
+.cand .note{font-size:11.5px;color:var(--warn);margin-top:5px}
+.bar{height:9px;background:var(--die-out);border-radius:5px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent)}
+.ok{color:var(--ok);font-weight:700}.bad{color:var(--bad);font-weight:700}
+.scroll{overflow-x:auto}
+.flex{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
+label.rng{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}
+footer{padding:16px 22px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--border);margin-top:24px}
+</style>
+</head>
+<body>
+<header>
+  <h1>P&amp;T 불량 분석 · 테스트 정책 워크벤치</h1>
+  <div class="sub">웨이퍼 테스트 이상 분포 → 결함 이미지 특정 → 원인 공정 후보 → Fail Address 불량 모드</div>
+  <div class="chips">
+    <span class="chip real">웨이퍼 맵 = WM-811K 실데이터</span>
+    <span class="chip real">SEM = Carinthia-S 실데이터</span>
+    <span class="chip syn">Fail Address = 합성 (공개 데이터 없음)</span>
+    <span class="chip look">원인 공정 = 문헌 룩업 (모델 아님)</span>
+  </div>
+</header>
+<nav>
+  <button class="on" data-tab="t1">1. 웨이퍼 맵 분석</button>
+  <button data-tab="t2">2. SEM 결함 · 원인 후보</button>
+  <button data-tab="t3">3. Fail Address 분석</button>
+  <button data-tab="t4">4. 판정 피드백</button>
+  <button data-tab="t5">5. 한계와 근거</button>
+</nav>
+<main>
+
+<!-- ================= 탭 1 ================= -->
+<section id="t1" class="tab on">
+  <div class="warnbox">웨이퍼 맵의 다이 합불과 공간 분포는 <b>WM-811K 실데이터</b>입니다.
+    패턴 라벨 분류는 CNN 예측이며, 히트맵은 Grad-CAM으로 계산한 <b>판단 근거 영역</b>입니다.
+    균형 샘플링 표본이므로 여기 표시되는 불량률은 실제 라인 수율이 아닙니다.</div>
+  <div class="grid" style="grid-template-columns:260px minmax(320px,1fr) minmax(280px,380px)">
+    <div class="panel">
+      <h3>웨이퍼 선택</h3>
+      <select id="wsel" size="20" style="height:420px"></select>
+      <div style="margin-top:8px;font-size:12px;color:var(--muted)" id="wcount"></div>
+    </div>
+    <div class="panel">
+      <h3>웨이퍼 맵 <span id="wid" class="mono" style="color:var(--muted);font-weight:400"></span></h3>
+      <div class="flex">
+        <div>
+          <canvas id="wmap" width="320" height="320"></canvas>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:5px">
+            <span style="color:var(--die-pass)">■</span> 정상
+            <span style="color:var(--die-fail)">■</span> 불량
+            <span style="color:var(--die-out)">■</span> 웨이퍼 밖
+          </div>
+        </div>
+        <div>
+          <canvas id="wcam" width="320" height="320"></canvas>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:5px">Grad-CAM 근거 영역 (붉을수록 기여 큼)</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>분류 결과와 특징</h3>
+      <div id="winfo"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 탭 2 ================= -->
+<section id="t2" class="tab">
+  <div class="notice">제시된 항목은 <b>후보</b>이며 확정 판단이 아닙니다. 최종 판단은 엔지니어가 수행합니다.</div>
+  <div class="warnbox">SEM 이미지와 마스크는 <b>Carinthia-S 실데이터</b>입니다.
+    데이터셋이 <b>결함 클래스 이름을 공개하지 않아</b> 라벨은 숫자 1~6뿐입니다.
+    숫자에 임의로 결함 용어를 붙이지 않고, <b>마스크에서 측정한 형태</b>를 근거로 원인 공정 후보를 조회합니다.
+    Carinthia-S가 어느 공정 층인지도 공개되지 않았으므로, 후보는 "이 형태의 결함이 일반적으로 어느 공정에서
+    비롯되는가"이지 "이 이미지의 원인이 무엇인가"가 아닙니다.</div>
+  <div class="grid" style="grid-template-columns:280px minmax(340px,1fr) minmax(320px,460px)">
+    <div class="panel">
+      <h3>이미지 선택</h3>
+      <select id="ssel" size="18" style="height:380px"></select>
+      <div style="margin-top:8px;font-size:12px;color:var(--muted)" id="scount"></div>
+    </div>
+    <div class="panel">
+      <h3>원본 · 정답 · 예측
+        <label style="font-weight:400;font-size:12px;margin-left:10px;cursor:pointer">
+          <input type="checkbox" id="sstretch" checked> 대비 강조(표시용)</label></h3>
+      <p style="font-size:11.5px;color:var(--muted);margin:-4px 0 8px">
+        원본 SEM은 밝기 표준편차 중앙값이 10.8(0~255)로 매우 낮아 그대로는 결함이 잘 보이지 않습니다.
+        대비 강조는 2~98 백분위로 선형 스트레칭한 <b>표시용 처리</b>이며, 모델 입력이나 측정값은
+        원본 그대로를 씁니다.</p>
+      <div class="flex">
+        <div><canvas id="simg" width="192" height="192"></canvas>
+          <div style="font-size:11.5px;color:var(--muted)">원본 SEM (128×128로 축소)</div></div>
+        <div><canvas id="sgt" width="192" height="192"></canvas>
+          <div style="font-size:11.5px;color:var(--muted)"><span style="color:#2ea043">■</span> 전문가 정답 마스크</div></div>
+        <div><canvas id="spr" width="192" height="192"></canvas>
+          <div style="font-size:11.5px;color:var(--muted)"><span style="color:#e5534b">■</span> 모델 예측 마스크</div></div>
+      </div>
+      <div id="sinfo" style="margin-top:12px"></div>
+    </div>
+    <div class="panel">
+      <h3>원인 공정 후보 <span style="font-weight:400;color:var(--muted);font-size:12px">(문헌 룩업 · 학습 대상 아님)</span></h3>
+      <div id="scand"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 탭 3 ================= -->
+<section id="t3" class="tab">
+  <div class="warnbox"><b>이 탭의 주소 데이터는 전부 합성입니다.</b>
+    셀 단위 Fail Address 비트맵은 공개 데이터가 존재하지 않습니다. WM-811K는 다이 단위 합불만 제공하며
+    칩 내부 셀 주소는 없습니다. 판별은 학습 모델이 아니라 <b>규칙 기반</b>이며,
+    임계값은 전부 <b>가정치</b>입니다 — 아래 슬라이더로 직접 바꿔 결과가 얼마나 흔들리는지 확인하십시오.
+    주소 표기는 <b>16진수</b>입니다.</div>
+  <div class="grid" style="grid-template-columns:300px minmax(300px,1fr) minmax(300px,420px)">
+    <div class="panel">
+      <h3>합성 조건</h3>
+      <label class="rng">불량 모드</label>
+      <select id="fmode">
+        <option value="single_bit">싱글비트</option>
+        <option value="row_fail" selected>로우성 (X 고정)</option>
+        <option value="column_fail">칼럼성 (Y 고정)</option>
+        <option value="block_fail">블락성</option>
+        <option value="cross_fail">크로스 (로우+칼럼)</option>
+      </select>
+      <div style="margin-top:12px">
+        <label class="rng">fail 개수 <b id="fnv">20</b></label>
+        <input type="range" id="fn" min="4" max="60" value="20" style="width:100%">
+        <label class="rng">산발 잡음 <b id="fnzv">2</b>건</label>
+        <input type="range" id="fnz" min="0" max="15" value="2" style="width:100%">
+        <label class="rng">주소 간격(stride) <b id="fstv">16</b></label>
+        <input type="range" id="fst" min="1" max="64" value="16" style="width:100%">
+      </div>
+      <button class="act" id="fgen" style="margin-top:12px;width:100%">다시 생성</button>
+      <h3 style="margin-top:18px">판별 임계값 <span style="font-weight:400;color:var(--warn);font-size:11.5px">전부 가정치</span></h3>
+      <label class="rng">line_min_count <b id="v1">4</b></label>
+      <input type="range" id="r1" min="2" max="12" value="4" style="width:100%">
+      <label class="rng">line_min_ratio <b id="v2">0.30</b></label>
+      <input type="range" id="r2" min="5" max="99" value="30" style="width:100%">
+      <label class="rng">block_min_count <b id="v3">6</b></label>
+      <input type="range" id="r3" min="2" max="20" value="6" style="width:100%">
+      <label class="rng">block_min_ratio <b id="v4">0.40</b></label>
+      <input type="range" id="r4" min="5" max="99" value="40" style="width:100%">
+    </div>
+    <div class="panel">
+      <h3>주소 분포</h3>
+      <canvas id="fplot" width="340" height="340"></canvas>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:5px">
+        가로 = X (row address), 세로 = Y (column address). 전체 주소 공간을 정규화해 표시.</div>
+      <h3 style="margin-top:14px">Fail Address 목록</h3>
+      <div class="scroll" style="max-height:230px;overflow-y:auto">
+        <table class="mono"><thead><tr><th>X</th><th>Y</th></tr></thead><tbody id="ftbl"></tbody></table>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>판별 결과와 근거</h3>
+      <div id="fres"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 탭 4 ================= -->
+<section id="t4" class="tab">
+  <div class="notice">AI는 후보와 근거만 제시합니다. <b>원인 공정을 판정하지 않습니다.</b>
+    판정은 엔지니어가 하고, 그 판정이 쌓이면 학습 데이터가 됩니다.</div>
+  <div class="grid" style="grid-template-columns:minmax(340px,1fr) minmax(320px,480px)">
+    <div class="panel">
+      <h3>피드백 루프</h3>
+      <pre class="mono" style="font-size:12px;line-height:1.75;overflow-x:auto">SEM 이미지
+  └→ 마스크에서 형태 측정            (관측 사실)
+      └→ cause_map.yaml 룩업
+          └→ 후보 + 근거 + 논문 출처 제시   ← AI가 하는 일은 여기까지
+              └→ 엔지니어가 판정              ← 사람이 결정
+                  └→ verdicts.jsonl 누적 (append-only)
+                      └→ 준비도 판단
+                          └→ 충분하면 학습 데이터로 내보내기</pre>
+      <h3 style="margin-top:16px">설계 원칙</h3>
+      <ol style="font-size:12.5px;padding-left:20px;margin:0">
+        <li><b>AI는 판정하지 않는다.</b> 후보·근거·출처를 나열할 뿐 선택하지 않는다.</li>
+        <li><b>append-only.</b> 기존 기록을 수정하지 않는다. 판단이 바뀐 이력도 데이터다.</li>
+        <li><b>표본이 부족하면 학습을 거부한다.</b> 적은 표본으로 그럴듯한 모델을 만드는 것이
+            이 프로젝트에서 가장 위험한 실패다.</li>
+        <li>후보 목록 밖 판정을 막지 않는다. 그것이 쌓이면 룩업 표를 개정할 근거가 된다.</li>
+      </ol>
+    </div>
+    <div class="panel">
+      <h3>학습 준비 기준 <span style="font-weight:400;color:var(--warn);font-size:11.5px">가정치</span></h3>
+      <table>
+        <tr><th>조건</th><th>기준</th></tr>
+        <tr><td>엔지니어 판정 총 건수</td><td>≥ 100</td></tr>
+        <tr><td>30건 이상 모인 공정 종류</td><td>≥ 2</td></tr>
+        <tr><td>공정당 최소 건수</td><td>≥ 30</td></tr>
+      </table>
+      <p style="font-size:12px;color:var(--muted)">공개된 기준이 없습니다. 클래스당 수십 건 미만이면
+        검증셋 분리조차 성립하지 않습니다(Module B의 class 5가 4장이라 F1이 무의미했던 것과 같은 문제).
+        <b>이 값을 넘겨도 성능이 보장되지는 않습니다.</b> 하한일 뿐입니다.</p>
+      <h3 style="margin-top:14px">판정 입력 (CLI)</h3>
+      <pre class="mono" style="font-size:11.5px;overflow-x:auto;background:var(--bg);padding:9px;border-radius:6px">
+# 후보 확인 (판정하지 않음)
+python src/model/feedback.py show --image &lt;filename&gt;
+
+# 엔지니어 판정 기록
+python src/model/feedback.py add --image &lt;filename&gt; \
+    --process CMP --engineer &lt;이름&gt; \
+    --confidence high --rationale "연마 방향과 일치"
+
+# 누적 현황·학습 준비도
+python src/model/feedback.py stats</pre>
+      <p style="font-size:12px;color:var(--muted)">대시보드는 브라우저 저장소를 쓰지 않으므로
+        판정 입력은 CLI로 받습니다. 이 화면은 조회 전용입니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 탭 5 ================= -->
+<section id="t5" class="tab">
+  <div class="panel">
+    <h3>이 프로젝트가 주장하는 것과 주장하지 않는 것</h3>
+    <ul style="font-size:13px">
+      <li>웨이퍼 맵의 다이 합불과 공간 분포는 <b>WM-811K 실데이터</b>입니다.</li>
+      <li>SEM 결함 이미지와 세그멘테이션 마스크는 <b>Carinthia-S 실데이터</b>입니다.</li>
+      <li>Fail Address는 <b>공개 데이터가 없어 합성</b>했습니다. 절대값이 실제 제품과 같다고 주장하지 않습니다.</li>
+      <li>원인 공정 추정은 <b>모델이 아니라 문헌 기반 룩업</b>이며 확정 판단은 사람이 수행합니다.</li>
+      <li>따라서 주장하는 것은 <b>모델 성능이 아니라 분석 흐름의 설계와 의사결정 근거의 가시화</b>입니다.</li>
+    </ul>
+  </div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(330px,1fr));margin-top:16px">
+    <div class="panel"><h3>데이터 계층 — 혼동 금지</h3>
+      <table><tr><th>계층</th><th>단위</th><th>데이터</th></tr>
+      <tr><td>웨이퍼 맵</td><td>다이 1개 = 점 1개</td><td>실데이터</td></tr>
+      <tr><td>Fail Address</td><td>다이 <b>내부</b> 셀 주소</td><td>합성</td></tr>
+      <tr><td>SEM</td><td>결함 1개 확대</td><td>실데이터</td></tr></table>
+      <p style="font-size:12px;color:var(--muted)">두 데이터셋은 서로 다른 라인·제품·시점의 것입니다.
+      Module A와 B를 <b>같은 웨이퍼의 데이터인 것처럼 연결하지 않습니다.</b>
+      대시보드가 잇는 것은 업무 흐름의 재현이지 동일 웨이퍼 추적이 아닙니다.</p></div>
+    <div class="panel"><h3>주요 한계</h3><div id="limits"></div></div>
+    <div class="panel"><h3>모델 성능 (참고용)</h3><div id="perf"></div></div>
+  </div>
+</section>
+
+</main>
+<footer>
+  <div>데이터 출처 · 필수 인용</div>
+  <div>WM-811K: M.-J. Wu, J.-S. R. Jang, J.-L. Chen, "Wafer Map Failure Pattern Recognition and Similarity Ranking for Large-Scale Data Sets," IEEE Trans. Semicond. Manuf., vol. 28, no. 1, pp. 1-12, 2015. doi:10.1109/TSM.2014.2364237 / MIR-WM811K, http://mirlab.org/dataset/public/</div>
+  <div>Carinthia-S: C. Kofler, V. Hasić, Zenodo, doi:10.5281/zenodo.16895427 (CC BY 4.0)</div>
+  <div id="gen" style="margin-top:6px"></div>
+</footer>
+<script id="payload" type="application/json">__DATA__</script>
+<script>
+__SCRIPT__
+</script>
+</body>
+</html>

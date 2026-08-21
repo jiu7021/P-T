@@ -17,15 +17,27 @@
 ```
 웨이퍼 테스트 결과에서 이상 분포를 발견   →  Module A
   → 해당 좌표의 결함을 이미지로 특정      →  Module B
-    → 원인 공정을 추적                    →  Module B-3 (룩업, 사람이 확정)
-      → 테스트 조건과 정책을 조정          →  Module C
+    → 원인 공정 후보 제시                 →  Module B-3 (문헌 룩업, 사람이 확정)
+      → 엔지니어 판정을 누적              →  피드백 루프
+  → 칩 내부 Fail Address로 불량 모드 판별  →  Module E
 ```
 
 | 모듈 | 단계 | 데이터 |
 |---|---|---|
 | A. 웨이퍼 맵 분석 | 이상 분포 발견 | WM-811K (실데이터) |
 | B. SEM 결함 분석 | 결함 특정과 원인 후보 제시 | Carinthia-S (실데이터) |
-| C. 테스트 정책 시뮬레이터 | 정책 조정 | A의 실데이터 + 항목 결과는 합성 |
+| E. Fail Address 분석 | 칩 내부 불량 모드 판별 | **합성** (공개 데이터 없음) |
+| D. 통합 대시보드 | 단일 HTML | 위 결과를 인라인 임베드 |
+
+### 데이터 계층 — 혼동하지 말 것
+
+| 계층 | 단위 | 데이터 |
+|---|---|---|
+| 웨이퍼 맵 | 다이 1개 = 점 1개 (pass/fail) | WM-811K **실데이터** |
+| Fail Address | 다이 **내부** 셀 주소 (16진수 X/Y) | **합성** |
+| SEM 이미지 | 결함 1개의 확대 이미지 | Carinthia-S **실데이터** |
+
+> 테스트 정책 시뮬레이터(STOF·순서 재배치·τ 스윕·스택 단수별 원가)는 **보류**했다.
 
 ## 데이터 준비 (수동)
 
@@ -42,7 +54,24 @@
 ## 환경
 
 ```
-pip install -r requirements.txt
+bash setup.sh                                   # venv 생성·설치 (Intel Mac 제약 자동 처리)
+.venv/bin/python src/data/download.py           # 데이터 자동 다운로드 (인증 불필요)
+```
+
+재현 순서:
+
+```
+.venv/bin/python src/data/load_wm811k.py        # A-1
+.venv/bin/python src/features/spatial.py        # A-2 (누수 검증 포함)
+.venv/bin/python src/model/pattern_cnn.py       # A-3 (CPU 약 10분)
+.venv/bin/python src/data/load_carinthia.py     # B-1
+.venv/bin/python src/data/cache_carinthia.py    # B-2 준비
+.venv/bin/python src/model/defect_unet.py       # B-2 (CPU 약 90분)
+.venv/bin/python src/features/defect_shape.py   # B-3 형태 측정
+.venv/bin/python src/model/cause_lookup.py      # B-3 원인 후보 룩업
+.venv/bin/python src/sim/fail_address.py        # E   Fail Address
+.venv/bin/python src/viz/collect_dashboard_data.py
+.venv/bin/python src/viz/build_dashboard.py     # D   output/dashboard.html
 ```
 
 난수 시드는 전 과정에서 고정한다. 재현되지 않는 결과는 결과로 취급하지 않는다.
@@ -51,12 +80,14 @@ pip install -r requirements.txt
 
 | 단계 | 상태 |
 |---|---|
-| 저장소 뼈대 · 문서 초안 | 완료 |
-| 데이터 확보 | **미완 — 위 2개 파일 수동 다운로드 필요** |
-| Module A 웨이퍼 맵 분석 | 미착수 |
-| Module B SEM 결함 분석 | 미착수 |
-| Module C 테스트 정책 시뮬레이터 | 미착수 |
-| Module D 통합 대시보드 | 미착수 |
+| 저장소 뼈대 · 문서 | 완료 |
+| 데이터 확보 (자동 다운로드) | 완료 — `src/data/download.py` |
+| Module A 웨이퍼 맵 분석 | **완료** — 공간 상관 9.7배 확인, 패턴 분류 macro-F1 0.763 |
+| Module B SEM 결함 분석 | **완료** — Dice 0.939, 원인 공정 룩업 10후보 전부 출처 보유 |
+| Module E Fail Address 분석 | **완료** — 규칙 판별 자기검증 99.3%, 임계값 민감도 포함 |
+| 판정 피드백 루프 | **완료** — 표본 부족 시 학습 거부 |
+| Module D 통합 대시보드 | **완료** — `output/dashboard.html` (0.95 MB, 단일 파일) |
+| Module C 테스트 정책 시뮬레이터 | 보류 |
 
 ## 문서
 
