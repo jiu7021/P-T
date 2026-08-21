@@ -1,0 +1,16 @@
+# Module A/C 공통
+numpy>=2.0
+pandas>=2.2
+scipy>=1.13
+pyarrow>=16.0          # parquet 입출력
+scikit-learn>=1.5
+matplotlib>=3.9
+PyYAML>=6.0
+
+# Module A-3 / B-2 (딥러닝)
+torch>=2.3
+torchvision>=0.18
+Pillow>=10.0
+
+# Module C-4
+lightgbm>=4.3
