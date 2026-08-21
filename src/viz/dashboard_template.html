@@ -86,7 +86,7 @@ footer{padding:16px 22px;color:var(--muted);font-size:11.5px;border-top:1px soli
 <body>
 <header>
   <h1>P&amp;T 불량 분석 · 테스트 정책 워크벤치</h1>
-  <div class="sub">웨이퍼 테스트 이상 분포 → 결함 이미지 특정 → 원인 공정 후보 → Fail Address 불량 모드</div>
+  <div class="sub">웨이퍼 테스트(전기 시험) → 다이 등급 판정 → Fail Address 불량 모드 → (걸러진 다이는) FA 결함 분석</div>
   <div class="chips">
     <span class="chip real">웨이퍼 맵 = WM-811K 실데이터</span>
     <span class="chip real">SEM = Carinthia-S 실데이터</span>
@@ -96,10 +96,11 @@ footer{padding:16px 22px;color:var(--muted);font-size:11.5px;border-top:1px soli
 </header>
 <nav>
   <button class="on" data-tab="t1">1. 웨이퍼 맵 분석</button>
-  <button data-tab="t2">2. SEM 결함 · 원인 후보</button>
+  <button data-tab="tE">2. EDS 웨이퍼 테스트</button>
   <button data-tab="t3">3. Fail Address 분석</button>
-  <button data-tab="t4">4. 판정 피드백</button>
-  <button data-tab="t5">5. 한계와 근거</button>
+  <button data-tab="t2">4. FA — SEM 결함 분석</button>
+  <button data-tab="t4">5. 판정 피드백</button>
+  <button data-tab="t5">6. 한계와 근거</button>
 </nav>
 <main>
 
@@ -146,10 +147,71 @@ footer{padding:16px 22px;color:var(--muted);font-size:11.5px;border-top:1px soli
   </div>
 </section>
 
+<!-- ================= 탭 EDS ================= -->
+<section id="tE" class="tab">
+  <div class="warnbox"><b>웨이퍼 테스트는 전기 시험입니다.</b> 프로브 카드를 다이에 대고
+    전압을 인가해 출력이 규격에 맞는지 봅니다. 고온 조건도 여기서 겁니다.
+    <b>이 단계에서 결함 이미지는 보지 않습니다</b>(그건 FA 단계입니다).<br>
+    어느 좌표의 다이가 불량인지는 <b>WM-811K 실데이터</b>이고,
+    그 다이가 <b>어느 시험에서 어떤 값으로 걸렸는지와 fail bit 주소는 합성</b>입니다.</div>
+  <div class="grid" style="grid-template-columns:230px minmax(330px,1fr) minmax(330px,470px)">
+    <div class="panel">
+      <h3>웨이퍼 선택</h3>
+      <select id="esel" size="18" style="height:390px"></select>
+      <div style="margin-top:8px;font-size:12px;color:var(--muted)" id="ecount"></div>
+    </div>
+    <div class="panel">
+      <h3>다이 등급 <span id="etitle" style="font-weight:400;color:var(--muted);font-size:12.5px"></span></h3>
+      <canvas id="emap" width="360" height="360" style="cursor:crosshair"></canvas>
+      <div style="font-size:12px;margin-top:6px">
+        <span style="color:#4ca85c">■</span> Good — 전 시험 통과
+        <span style="color:#f0bf33;margin-left:8px">■</span> Repairable — 여분 행·열로 복구
+        <span style="color:#d93630;margin-left:8px">■</span> Fail — 복구 불가</div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:4px">
+        다이를 클릭하면 그 다이의 측정값과 판정 근거를 오른쪽에 표시합니다.</div>
+      <div id="ebar" style="margin-top:12px"></div>
+    </div>
+    <div class="panel">
+      <h3>측정값과 판정 근거</h3>
+      <div id="einfo"><p style="font-size:12.5px;color:var(--muted)">
+        왼쪽 웨이퍼 맵에서 다이를 클릭하십시오.</p></div>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(340px,1fr));margin-top:16px">
+    <div class="panel"><h3>시험 항목</h3><div id="etests"></div></div>
+    <div class="panel"><h3>Good / Repairable / Fail을 가르는 논리</h3>
+      <p style="font-size:12.5px;margin-top:0">메모리 칩에는 <b>여분 행·열</b>이 미리 들어 있습니다.
+        불량 셀이 나오면 그 행(또는 열)을 통째로 여분으로 갈아끼웁니다(퓨즈를 끊어 주소 재배정).</p>
+      <div id="egrades"></div>
+      <h3 style="margin-top:14px">리페어 분석 (must-repair 우선)</h3>
+      <ol id="esteps" style="font-size:12.5px;padding-left:20px;margin:0"></ol>
+      <div id="erefs" style="margin-top:10px"></div>
+    </div>
+    <div class="panel"><h3>불량 모드별 리페어 성공률</h3>
+      <p style="font-size:12px;color:var(--muted);margin-top:0">
+        같은 fail 개수라도 <b>모양</b>에 따라 리페어 성공 여부가 완전히 달라집니다.
+        이것이 Fail Address 분석이 필요한 이유입니다.</p>
+      <div id="emodes"></div></div>
+  </div>
+
+  <div class="panel" style="margin-top:16px">
+    <h3>민감도 — 가정이 결론을 얼마나 흔드나</h3>
+    <p style="font-size:12.5px;margin-top:0"><b>Good 비율은 모든 조건에서 고정입니다.</b>
+      Good/불량 경계는 실데이터가 정하므로 가정과 무관합니다.
+      흔들리는 것은 합성이 정하는 Repairable ↔ Fail 배분뿐입니다.</p>
+    <div id="esens" class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))"></div>
+  </div>
+</section>
+
 <!-- ================= 탭 2 ================= -->
 <section id="t2" class="tab">
   <div class="notice">제시된 항목은 <b>후보</b>이며 확정 판단이 아닙니다. 최종 판단은 엔지니어가 수행합니다.</div>
-  <div class="warnbox">SEM 이미지와 마스크는 <b>Carinthia-S 실데이터</b>입니다.
+  <div class="warnbox"><b>이 탭은 FA(불량 분석) 단계입니다.</b> 웨이퍼 테스트에서 Fail로 걸러진 다이를
+    나중에 뜯어 결함을 눈으로 확인하는 작업이며, 웨이퍼 테스트와 같은 단계가 아닙니다.
+    또한 여기 이미지는 Module 1·2의 웨이퍼와 <b>다른 라인·제품·시점</b>의 것입니다.
+    같은 웨이퍼를 추적하는 것이 아닙니다.<br><br>
+    SEM 이미지와 마스크는 <b>Carinthia-S 실데이터</b>입니다.
     데이터셋이 <b>결함 클래스 이름을 공개하지 않아</b> 라벨은 숫자 1~6뿐입니다.
     숫자에 임의로 결함 용어를 붙이지 않고, <b>마스크에서 측정한 형태</b>를 근거로 원인 공정 후보를 조회합니다.
     Carinthia-S가 어느 공정 층인지도 공개되지 않았으므로, 후보는 "이 형태의 결함이 일반적으로 어느 공정에서

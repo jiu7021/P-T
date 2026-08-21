@@ -114,6 +114,177 @@ function drawWafer(i) {
 `;
 }
 
+// ================= 탭 EDS: 웨이퍼 테스트 =================
+const E = D.eds;
+const G_COL = ['#4ca85c', '#f0bf33', '#d93630'];
+const G_NAME = ['Good', 'Repairable', 'Fail'];
+const G_KO = ['전 시험 통과', '여분 행·열로 복구 가능', '복구 불가'];
+let eCur = 0, eGeom = null;
+
+{
+  const sel = $('esel');
+  E.wafers.forEach((w, i) => {
+    const o = document.createElement('option');
+    const f = (w.counts.fail / (w.counts.good + w.counts.repairable + w.counts.fail) * 100);
+    o.value = i;
+    o.textContent = `${(PAT_KO[w.pattern] || w.pattern).padEnd(8, '\u3000')} Fail ${f.toFixed(0)}%`;
+    sel.appendChild(o);
+  });
+  $('ecount').textContent = `${E.wafers.length}장. 패턴마다 Fail 비율 최저·최고를 함께 골랐습니다.`;
+  sel.onchange = () => drawEds(+sel.value);
+  sel.value = 0;
+
+  // 시험 항목 표
+  $('etests').innerHTML = E.tests.map(t => {
+    const sp = t.spec, lo = sp.min, hi = sp.max;
+    const spec = (lo !== null && hi !== null) ? `${lo} ~ ${hi} ${t.unit}`
+               : (hi !== null ? `≤ ${hi} ${t.unit}` : `≥ ${lo} ${t.unit}`);
+    const temp = (E.temperatures.find(x => x.id === t.temperature) || {}).label || '';
+    return `<div class="cand">
+      <div class="proc">${t.order}. ${t.label} <span style="font-weight:400;color:var(--muted);font-size:12px">${temp}</span></div>
+      <div class="rat" style="white-space:pre-line">${t.plain.trim()}</div>
+      <div style="font-size:12.5px;margin-top:5px"><b style="color:var(--muted)">규격</b> ${spec}
+        · <b style="color:var(--muted)">리페어 대상</b> ${
+          t.repairable_scope === 'cell_array' ? '예 (셀 어레이)' : '아니오 (칩 전체 특성)'}</div>
+      ${(t.reference || []).map(r => `<div class="ref">출처: ${r}</div>`).join('')}
+    </div>`;
+  }).join('') + `<p style="font-size:11.5px;color:var(--warn)">규격 절대값은 가정치입니다.
+    항목 간 상대 관계만 물리적으로 타당하게 잡았습니다.</p>`;
+
+  $('egrades').innerHTML = E.grades.map((g, i) => `<div style="margin-bottom:8px">
+      <b style="color:${G_COL[i]}">${g.label}</b>
+      <div style="font-size:12.5px;white-space:pre-line">${g.rule.trim()}</div>
+      ${g.note ? `<div style="font-size:12px;color:var(--warn);white-space:pre-line;margin-top:4px">${g.note.trim()}</div>` : ''}
+    </div>`).join('');
+
+  const ra = (D.eds.repair_analysis_steps || null);
+  $('esteps').innerHTML = [
+    'fail bit의 주소를 (X=행, Y=열)으로 모은다.',
+    '어떤 행의 fail 수가 <b>남은 여분 열</b>보다 많으면 열로 덮을 수 없다 → 반드시 행 리페어를 배정한다.',
+    '어떤 열의 fail 수가 <b>남은 여분 행</b>보다 많으면 → 반드시 열 리페어.',
+    '강제 배정을 마친 뒤 남은 fail을 남은 여분으로 덮을 수 있는지 탐색한다.',
+    '전부 덮이면 Repairable, 남으면 Fail.',
+  ].map(x => `<li>${x}</li>`).join('');
+  $('erefs').innerHTML = `<div style="font-size:12px"><b style="color:var(--muted)">여분 자원</b>
+      행 ${E.repair.spare_rows}개 / 열 ${E.repair.spare_cols}개 <span style="color:var(--warn)">(가정치)</span></div>`
+    + (E.repair.reference || []).map(r => `<div class="ref">출처: ${r}</div>`).join('');
+
+  // 모드별 리페어 성공률
+  const bm = E.summary.by_mode || {};
+  const rows = Object.entries(bm).sort((a, b) => b[1].repairable - a[1].repairable);
+  $('emodes').innerHTML = `<table><tr><th>불량 모드</th><th>다이 수</th><th>Repairable</th></tr>`
+    + rows.map(([k, v]) => `<tr><td>${MODE_LABEL_E(k)}</td><td>${v.n.toLocaleString()}</td>
+        <td class="${v.repairable > 0.5 ? 'ok' : 'bad'}">${(v.repairable * 100).toFixed(2)}%</td></tr>`).join('')
+    + `</table><p style="font-size:12px;color:var(--muted);margin-top:8px">
+      로우성 하나는 여분 행 1개로 끝납니다. 블락성은 행·열을 다 써도 못 덮습니다.
+      좁은 영역에 fail이 뭉치면 어느 한 줄로 정리되지 않기 때문입니다.</p>`;
+
+  // 민감도
+  const S = E.sensitivity;
+  const card = (title, note, rowsArr) => `<div class="cand">
+      <div class="proc">${title}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:5px">${note}</div>
+      <table><tr><th>조건</th><th>Repairable</th><th>Fail</th></tr>
+      ${rowsArr.map(([k, v, mark]) => `<tr><td>${k}${mark ? ' <b>← 기준</b>' : ''}</td>
+        <td>${(v.repairable * 100).toFixed(2)}%</td><td>${(v.fail * 100).toFixed(2)}%</td></tr>`).join('')}
+      </table></div>`;
+  $('esens').innerHTML =
+    card('여분 행·열 개수', '2배로 늘려도 Repairable은 크게 늘지 않습니다. 블락성이 안 덮이기 때문입니다.',
+         Object.entries(S.spare).map(([k, v]) => [k.replace('r', '행/').replace('c', '열'), v, k === '4r4c']))
+  + card('리페어 불가 비율', '칩 전체 특성 불량의 비율. 근거가 되는 공개 통계가 없는 가정치입니다.',
+         Object.entries(S.die_ratio).map(([k, v]) => [k, v, k === '0.25']))
+  + card('불량 모드 배분', '가장 민감한 가정입니다. Repairable 절대값을 인용해서는 안 됩니다.',
+         Object.entries(S.mode_mix).map(([k, v]) => [k, v, k === '기준']));
+
+  drawEds(0);
+}
+
+function MODE_LABEL_E(k) {
+  return ({single_bit: '싱글비트', row_fail: '로우성', column_fail: '칼럼성',
+           block_fail: '블락성', cross_fail: '크로스'})[k] || k;
+}
+
+function drawEds(i) {
+  eCur = i;
+  const w = E.wafers[i], S = 360;
+  $('etitle').textContent = `${w.wafer_id} · ${PAT_KO[w.pattern] || w.pattern}`;
+  const c = $('emap'), g = c.getContext('2d');
+  const px = Math.floor(Math.min(S / w.w, S / w.h));
+  const ox = Math.floor((S - px * w.w) / 2), oy = Math.floor((S - px * w.h) / 2);
+  eGeom = {px, ox, oy};
+  g.clearRect(0, 0, S, S);
+  for (let k = 0; k < w.x.length; k++) {
+    g.fillStyle = G_COL[w.grade[k]];
+    g.fillRect(ox + w.x[k] * px, oy + w.y[k] * px, px, px);
+  }
+  const tot = w.x.length;
+  $('ebar').innerHTML = [0, 1, 2].map(gi => {
+    const n = w.grade.filter(v => v === gi).length;
+    return `<div style="margin-bottom:5px">
+      <div style="display:flex;justify-content:space-between;font-size:12.5px">
+        <span>${G_NAME[gi]}</span><span class="mono">${n.toLocaleString()} (${(n / tot * 100).toFixed(2)}%)</span></div>
+      <div class="bar"><i style="width:${(n / tot * 100).toFixed(1)}%;background:${G_COL[gi]}"></i></div></div>`;
+  }).join('');
+}
+
+$('emap').onclick = (ev) => {
+  const w = E.wafers[eCur], r = $('emap').getBoundingClientRect();
+  const sx = $('emap').width / r.width;
+  const mx = Math.floor(((ev.clientX - r.left) * sx - eGeom.ox) / eGeom.px);
+  const my = Math.floor(((ev.clientY - r.top) * sx - eGeom.oy) / eGeom.px);
+  const k = w.x.findIndex((x, idx) => x === mx && w.y[idx] === my);
+  if (k < 0) return;
+  const gi = w.grade[k];
+  const mode = E.modes[w.mode[k]] || '';
+  const spec = Object.fromEntries(E.tests.map(t => [t.id, t.spec]));
+  const rowsHtml = [
+    ['핀 전압 (오픈/쇼트)', (w.os[k] / 100).toFixed(2), 'V', spec.open_short],
+    ['대기 전류', (w.ids[k] / 100).toFixed(2), 'mA', spec.idd_standby],
+    ['동작 전류', (w.ida[k] / 10).toFixed(1), 'mA', spec.idd_active],
+    ['리텐션 (85°C)', (w.ret[k] / 10).toFixed(1), 'ms', spec.retention_hot],
+  ].map(([nm, v, u, sp]) => {
+    const val = parseFloat(v);
+    const bad = (sp.min !== null && val < sp.min) || (sp.max !== null && val > sp.max);
+    const spTxt = (sp.min !== null && sp.max !== null) ? `${sp.min} ~ ${sp.max}`
+                : (sp.max !== null ? `≤ ${sp.max}` : `≥ ${sp.min}`);
+    return `<tr><td>${nm}</td><td class="mono ${bad ? 'bad' : ''}">${v} ${u}</td>
+      <td style="color:var(--muted);font-size:11.5px">${spTxt} ${u}</td>
+      <td>${bad ? '<span class="bad">규격 밖</span>' : '<span class="ok">통과</span>'}</td></tr>`;
+  }).join('');
+
+  const isCell = ['single_bit', 'row_fail', 'column_fail', 'block_fail', 'cross_fail'].includes(mode);
+  let reason;
+  if (gi === 0) {
+    reason = '모든 시험을 규격 안에서 통과했습니다.';
+  } else if (!isCell && mode) {
+    reason = `<b>${({open_short: '오픈/쇼트', idd_standby: '대기 전류', idd_active: '동작 전류'})[mode]}</b>가
+      규격을 벗어났습니다. 여분 행·열은 <b>셀 어레이</b>를 대체하는 자원이므로,
+      이런 칩 전체 특성 불량은 갈아끼울 대상이 없어 리페어가 성립하지 않습니다. → Fail`;
+  } else {
+    reason = `셀 어레이 불량 <b>${MODE_LABEL_E(mode)}</b>, fail bit ${w.nbits[k]}개.
+      리페어 분석 결과 여분 행 <b>${w.ur[k]}/${E.repair.spare_rows}</b>,
+      열 <b>${w.uc[k]}/${E.repair.spare_cols}</b>을 사용했으며 `
+      + (gi === 1 ? '전부 덮였습니다. → <b>Repairable</b>'
+                  : '여분을 다 써도 fail이 남았습니다. → <b>Fail</b>');
+  }
+
+  $('einfo').innerHTML = `
+    <div style="font-size:16px;font-weight:700;color:${G_COL[gi]};margin-bottom:2px">${G_NAME[gi]}</div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">${G_KO[gi]}</div>
+    <div class="kv" style="margin-bottom:10px">
+      <b>좌표</b><span class="mono">(${mx}, ${my})</span>
+      <b>실데이터 판정</b><span>${w.grade[k] === 0 ? '정상 다이' : '불량 다이'}
+        <span style="color:var(--muted);font-size:11px">WM-811K</span></span>
+    </div>
+    <table style="margin-bottom:10px">
+      <tr><th>시험</th><th>측정값</th><th>규격</th><th></th></tr>${rowsHtml}
+    </table>
+    <div style="font-size:12.5px;line-height:1.7">${reason}</div>
+    <p style="font-size:11.5px;color:var(--muted);margin-top:10px">
+      측정값과 fail bit 주소는 합성입니다. 이 다이가 불량인지 아닌지는 실데이터가 정했고,
+      합성은 <b>왜 불량인지</b>만 만듭니다.</p>`;
+};
+
 // ================= 탭 2: SEM =================
 const SEM = D.sem.items, CAUSE = D.sem.cause_map;
 {

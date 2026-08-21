@@ -14,20 +14,27 @@
 
 ## 모사하는 업무 루프
 
+**웨이퍼 테스트(EDS)는 전기 시험이다.** 프로브 카드를 다이에 대고 전압을 인가해
+출력이 규격에 맞는지 본다. 결함 이미지 분석은 이 단계가 아니라 FA에서 한다.
+
 ```
-웨이퍼 테스트 결과에서 이상 분포를 발견   →  Module A
-  → 해당 좌표의 결함을 이미지로 특정      →  Module B
-    → 원인 공정 후보 제시                 →  Module B-3 (문헌 룩업, 사람이 확정)
-      → 엔지니어 판정을 누적              →  피드백 루프
-  → 칩 내부 Fail Address로 불량 모드 판별  →  Module E
+[웨이퍼 테스트 = EDS]
+  전압 인가 · 고온 동작 → 항목별 측정값
+    → 규격 대비 판정 → Good / Repairable / Fail
+       └ fail bit 주소를 모아 리페어 분석 (여분 행·열로 덮이나?)
+    → 웨이퍼 좌표에 등급 시각화
+[FA — 걸러진 다이를 나중에 뜯어볼 때]
+  SEM 결함 이미지 → 형태 측정 → 원인 공정 후보(문헌 룩업) → 엔지니어 판정 누적
 ```
 
 | 모듈 | 단계 | 데이터 |
 |---|---|---|
-| A. 웨이퍼 맵 분석 | 이상 분포 발견 | WM-811K (실데이터) |
-| B. SEM 결함 분석 | 결함 특정과 원인 후보 제시 | Carinthia-S (실데이터) |
-| E. Fail Address 분석 | 칩 내부 불량 모드 판별 | **합성** (공개 데이터 없음) |
-| D. 통합 대시보드 | 단일 HTML | 위 결과를 인라인 임베드 |
+| 1. 웨이퍼 맵 분석 | 이상 분포 발견 | WM-811K (실데이터) |
+| 2. **EDS 웨이퍼 테스트** | 전기 시험 → 다이 등급 판정 | 불량 위치 실데이터 + **측정값 합성** |
+| 3. Fail Address 분석 | 칩 내부 불량 모드 판별 | **합성** (공개 데이터 없음) |
+| 4. FA — SEM 결함 분석 | 결함 특정과 원인 후보 제시 | Carinthia-S (실데이터) |
+| 5. 판정 피드백 | 엔지니어 판정 누적 | — |
+| 6. 통합 대시보드 | 단일 HTML | 위 결과를 인라인 임베드 |
 
 ### 데이터 계층 — 혼동하지 말 것
 
@@ -69,7 +76,9 @@ bash setup.sh                                   # venv 생성·설치 (Intel Mac
 .venv/bin/python src/model/defect_unet.py       # B-2 (CPU 약 90분)
 .venv/bin/python src/features/defect_shape.py   # B-3 형태 측정
 .venv/bin/python src/model/cause_lookup.py      # B-3 원인 후보 룩업
-.venv/bin/python src/sim/fail_address.py        # E   Fail Address
+.venv/bin/python src/sim/fail_address.py        # 3   Fail Address
+.venv/bin/python src/sim/eds.py                # 2   EDS 전기 시험 (약 2.5분)
+.venv/bin/python src/sim/eds_sensitivity.py    #     EDS 민감도
 .venv/bin/python src/viz/collect_dashboard_data.py
 .venv/bin/python src/viz/build_dashboard.py     # D   output/dashboard.html
 ```
@@ -82,9 +91,10 @@ bash setup.sh                                   # venv 생성·설치 (Intel Mac
 |---|---|
 | 저장소 뼈대 · 문서 | 완료 |
 | 데이터 확보 (자동 다운로드) | 완료 — `src/data/download.py` |
-| Module A 웨이퍼 맵 분석 | **완료** — 공간 상관 9.7배 확인, 패턴 분류 macro-F1 0.763 |
-| Module B SEM 결함 분석 | **완료** — Dice 0.939, 원인 공정 룩업 10후보 전부 출처 보유 |
-| Module E Fail Address 분석 | **완료** — 규칙 판별 자기검증 99.3%, 임계값 민감도 포함 |
+| 1. 웨이퍼 맵 분석 | **완료** — 공간 상관 9.7배 확인 |
+| 2. **EDS 웨이퍼 테스트** | **완료** — Good 76.96% / Repairable 12.35% / Fail 10.70%, 민감도 포함 |
+| 3. Fail Address 분석 | **완료** — 규칙 판별 자기검증 99.3%, 임계값 민감도 포함 |
+| 4. FA — SEM 결함 분석 | **완료** — 원인 공정 룩업 10후보 전부 문헌 출처 보유 |
 | 판정 피드백 루프 | **완료** — 표본 부족 시 학습 거부 |
 | Module D 통합 대시보드 | **완료** — `output/dashboard.html` (0.95 MB, 단일 파일) |
 | Module C 테스트 정책 시뮬레이터 | 보류 |

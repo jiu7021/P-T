@@ -197,6 +197,63 @@ def collect_sem() -> dict:
     return {"items": items, "cause_map": cause}
 
 
+MODES = ["", "single_bit", "row_fail", "column_fail", "block_fail", "cross_fail",
+         "open_short", "idd_standby", "idd_active"]
+GRADE_I = {"good": 0, "repairable": 1, "fail": 2}
+
+
+def collect_eds(n_wafer: int = 12) -> dict:
+    """EDS 판정 결과. 웨이퍼 몇 장은 다이별 측정값까지 담는다.
+
+    전체 2,000장의 측정값을 다 넣으면 파일이 수십 MB가 된다. 패턴별로 골라
+    소수를 담되, **잘 나온 웨이퍼만 고르지 않는다**(Fail 비율 상·하위를 섞는다).
+    값은 정수로 축약한다(전압 ×100, 전류 ×10 등). 화면에서 되돌린다.
+    """
+    res = pd.read_parquet(PROCESSED / "eds_results.parquet")
+    meta = pd.read_parquet(INTERIM / "wafers_meta.parquet").set_index("wafer_id")
+    summary = json.loads((PROCESSED / "eds_summary.json").read_text(encoding="utf-8"))
+    sens = json.loads((PROCESSED / "eds_sensitivity.json").read_text(encoding="utf-8"))
+    with open(ROOT / "config" / "eds_tests.yaml", encoding="utf-8") as f:
+        import yaml
+        cfg = yaml.safe_load(f)
+
+    fail_rate = res.groupby("wafer_id").grade.apply(lambda s: (s == "fail").mean())
+    picks = []
+    for p, sub in meta.groupby("pattern_label"):
+        ids = [w for w in sub.index if w in fail_rate.index]
+        if not ids:
+            continue
+        fr = fail_rate.loc[ids].sort_values()
+        picks += [fr.index[0], fr.index[-1]]        # Fail 최저·최고를 함께
+    picks = list(dict.fromkeys(picks))[:n_wafer * 2]
+
+    groups = dict(tuple(res[res.wafer_id.isin(picks)].groupby("wafer_id", sort=False)))
+    wafers = []
+    for wid in picks:
+        g = groups[wid]
+        m = meta.loc[wid]
+        wafers.append({
+            "wafer_id": wid, "pattern": m.pattern_label,
+            "h": int(m.map_h), "w": int(m.map_w),
+            "x": g.die_x.astype(int).tolist(),
+            "y": g.die_y.astype(int).tolist(),
+            "grade": [GRADE_I[v] for v in g.grade],
+            "mode": [MODES.index(v) if v in MODES else 0 for v in g.fail_mode],
+            "nbits": g.n_fail_bits.astype(int).tolist(),
+            "ur": g.used_spare_rows.astype(int).tolist(),
+            "uc": g.used_spare_cols.astype(int).tolist(),
+            # 측정값은 정수로 축약 (전압 ×100, 전류 ×10, 리텐션 ×10)
+            "os": (g.open_short_v * 100).round().astype(int).tolist(),
+            "ids": (g.idd_standby_ma * 100).round().astype(int).tolist(),
+            "ida": (g.idd_active_ma * 10).round().astype(int).tolist(),
+            "ret": (g.retention_hot_ms * 10).round().astype(int).tolist(),
+            "counts": {k: int((g.grade == k).sum()) for k in GRADE_I},
+        })
+    return {"wafers": wafers, "summary": summary, "sensitivity": sens,
+            "tests": cfg["tests"], "repair": cfg["repair"], "grades": cfg["grades"],
+            "temperatures": cfg["temperatures"], "modes": MODES}
+
+
 def main() -> int:
     print("웨이퍼 맵 수집 중…")
     wafers = collect_wafers()
@@ -205,6 +262,10 @@ def main() -> int:
     print("SEM 수집 중…")
     sem = collect_sem()
     print(f"  {len(sem['items'])}장")
+
+    print("EDS 판정 수집 중…")
+    eds = collect_eds()
+    print(f"  웨이퍼 {len(eds['wafers'])}장")
 
     print("평가 지표 로드…")
     pat_eval = json.loads((PROCESSED / "pattern_eval.json").read_text(encoding="utf-8"))
@@ -221,11 +282,13 @@ def main() -> int:
             "data_origin": {
                 "wafer_map": "WM-811K 실데이터",
                 "sem": "Carinthia-S 실데이터",
+                "eds_measurement": "합성 (측정값·fail address). 불량 위치는 실데이터",
                 "fail_address": "합성 (공개 데이터 없음)",
                 "cause_process": "문헌 기반 룩업 (모델 아님)",
             },
         },
         "wafers": wafers,
+        "eds": eds,
         "sem": sem,
         "pattern_eval": pat_eval,
         "defect_eval": def_eval,
