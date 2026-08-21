@@ -1,0 +1,181 @@
+# =============================================================================
+# EDS(Electrical Die Sorting) 웨이퍼 테스트 정의
+#
+# 웨이퍼 테스트는 프로브 카드를 다이에 대고 전압을 인가해 출력이 규격에 맞는지
+# 보는 **전기 시험**이다. 이미지 분석은 여기서 하지 않는다.
+# (결함 이미지 분석은 EDS에서 걸러진 다이를 나중에 FA로 뜯어볼 때 한다.)
+#
+# 무엇이 실데이터이고 무엇이 합성인가
+# ---------------------------------------------------------------------------
+#   실데이터 (WM-811K) : 어떤 좌표의 다이가 불량인가, 그 불량이 웨이퍼 위에
+#                        어떻게 분포하는가
+#   합성              : 그 다이가 **어느 시험에서 어떤 측정값으로** 걸렸는가,
+#                        fail bit이 칩 안 어느 주소에 있는가
+#
+# 규격값의 절대 크기가 실제 제품과 같다고 주장하지 않는다. 항목 간 상대 관계
+# (예: 고온 리텐션이 상온보다 짧다)만 물리적으로 타당하게 잡았다.
+# =============================================================================
+
+meta:
+  version: 1
+  created: 2026-08-22
+  stage: EDS / wafer test
+  measurement_origin: synthetic
+  spatial_origin: WM-811K 실데이터
+
+# ---------------------------------------------------------------------------
+# 시험 온도 조건
+# ---------------------------------------------------------------------------
+temperatures:
+  - id: room
+    label: 상온
+    celsius: 25            # (가정치) 상온 시험 온도
+  - id: hot
+    label: 고온
+    celsius: 85            # (가정치) 고온 시험 온도. 통상 85°C 급이 쓰인다.
+    note: |
+      온도가 오르면 접합 누설이 커져 셀이 전하를 유지하는 시간이 짧아진다.
+      상온에서 통과하던 셀이 고온에서 떨어지는 일이 이 때문에 생긴다.
+    reference:
+      - "A. Bouhdada, J. Oualid, 'MOS capacitor holding time and diffusion length at DRAM refresh test temperature', Microelectronics Journal, vol. 26, no. 5, pp. 405-412, 1995. doi:10.1016/0026-2692(95)98942-k — 리프레시 시험 온도에서 커패시터 보유 시간이 온도에 의존함"
+
+# ---------------------------------------------------------------------------
+# 시험 항목
+#   repairable_scope: 이 항목에서 난 불량을 여분 행/열로 대체할 수 있는가
+#     cell_array = 셀 어레이 불량이므로 리페어 대상
+#     die_level  = 칩 전체 특성이므로 리페어 불가 (여분으로 갈아끼울 대상이 아니다)
+# ---------------------------------------------------------------------------
+tests:
+  - id: open_short
+    label: 오픈/쇼트
+    temperature: room
+    plain: |
+      각 핀에 아주 작은 전류를 흘리고 그때 걸리는 전압을 잰다.
+      배선이 끊겨 있으면 전압이 비정상으로 크고, 붙어 있으면 거의 0이 된다.
+    measure: 핀 전압
+    unit: V
+    spec: {min: -1.20, max: -0.40}     # (가정치) 보호 다이오드 강하 대역
+    fail_meaning:
+      above_max: 배선이 붙음(쇼트) 또는 접촉 이상
+      below_min: 배선이 끊김(오픈)
+    repairable_scope: die_level
+    order: 1
+
+  - id: idd_standby
+    label: 대기 전류
+    temperature: room
+    plain: |
+      규정 전압을 걸고 아무 동작도 시키지 않은 채 흐르는 전류를 잰다.
+      어딘가 새는 곳이 있으면 이 값이 커진다.
+    measure: 대기 전류
+    unit: mA
+    spec: {min: 0.0, max: 3.0}         # (가정치)
+    fail_meaning:
+      above_max: 누설 경로 존재
+    repairable_scope: die_level
+    order: 2
+
+  - id: idd_active
+    label: 동작 전류
+    temperature: room
+    plain: |
+      실제로 읽고 쓰는 동작을 시키면서 흐르는 전류를 잰다. 규격을 넘으면
+      소비 전력 사양을 못 맞춘다.
+    measure: 동작 전류
+    unit: mA
+    spec: {min: 0.0, max: 120.0}       # (가정치)
+    fail_meaning:
+      above_max: 소비 전력 초과
+    repairable_scope: die_level
+    order: 3
+
+  - id: func_march_room
+    label: 기능 시험 (상온)
+    temperature: room
+    plain: |
+      정해진 패턴을 모든 셀에 쓰고 다시 읽어 같은 값이 나오는지 본다.
+      틀린 셀이 나오면 그 셀의 주소를 fail address로 기록한다.
+    measure: fail bit 수
+    unit: 개
+    spec: {min: 0, max: 0}             # 기능 시험은 한 개라도 틀리면 fail 기록
+    fail_meaning:
+      above_max: 셀 어레이 불량. 주소를 모아 리페어 가능 여부를 따진다.
+    repairable_scope: cell_array
+    order: 4
+
+  - id: func_march_hot
+    label: 기능 시험 (고온)
+    temperature: hot
+    plain: |
+      같은 기능 시험을 고온에서 반복한다. 상온에서 아슬아슬하게 통과하던
+      셀이 여기서 떨어지는 경우가 있다.
+    measure: fail bit 수
+    unit: 개
+    spec: {min: 0, max: 0}
+    fail_meaning:
+      above_max: 고온 조건에서 드러나는 셀 어레이 불량
+    repairable_scope: cell_array
+    order: 5
+
+  - id: retention_hot
+    label: 리텐션 (고온)
+    temperature: hot
+    plain: |
+      셀에 값을 쓰고 리프레시를 멈춘 뒤 일정 시간 기다렸다가 읽는다.
+      전하가 새어 값이 바뀌면 그 셀은 리텐션 불량이다. 고온일수록 빨리 샌다.
+    measure: 보유 시간
+    unit: ms
+    spec: {min: 64.0, max: null}       # (가정치) 리프레시 주기 64 ms 급을 기준으로 삼음
+    fail_meaning:
+      below_min: 리프레시 주기 안에 값을 유지하지 못함
+    repairable_scope: cell_array
+    order: 6
+    reference:
+      - "A. Bouhdada, J. Oualid, 'MOS capacitor holding time and diffusion length at DRAM refresh test temperature', Microelectronics Journal, vol. 26, no. 5, pp. 405-412, 1995. doi:10.1016/0026-2692(95)98942-k"
+
+# ---------------------------------------------------------------------------
+# 리페어 자원과 판정
+# ---------------------------------------------------------------------------
+repair:
+  spare_rows: 4            # (가정치)
+  spare_cols: 4            # (가정치)
+  basis: |
+    실제 제품의 여분 행·열 개수는 공개되어 있지 않다. 여분 4행 / 4열은
+    리페어 분석 알고리즘 문헌에서 다루는 대표 구성을 따른 것이다.
+    개수를 바꾸면 Repairable 비율이 달라지므로 민감도를 함께 보고한다.
+  reference:
+    - "H. Kwon, J. Moon, J. Byun et al., 'Linear search algorithm for repair analysis with 4 spare row/4 spare column', IEEE Asia Pacific Conference on ASICs (APASIC), pp. 269-272, 2000. doi:10.1109/apasic.2000.896960 — 여분 4행/4열 구성의 리페어 분석"
+    - "D. Bhavsar, 'An algorithm for row-column self-repair of RAMs and its implementation in the Alpha 21264', International Test Conference (ITC), pp. 311-318, 1999. doi:10.1109/test.1999.805645 — 행·열 자가 리페어 알고리즘"
+    - "M. Lv, H. Sun, J. Xin et al., 'Efficient Repair Analysis Algorithm Exploration for Memory With Redundancy and In-Memory ECC', IEEE Transactions on Computers, vol. 70, no. 5, pp. 775-788, 2021. doi:10.1109/tc.2020.2996747"
+
+grades:
+  - id: good
+    label: Good
+    rule: 모든 시험을 규격 안에서 통과. 고칠 것이 없다.
+  - id: repairable
+    label: Repairable
+    rule: |
+      셀 어레이 불량(fail bit)이 있으나 여분 행·열 개수 안에서 전부 덮을 수 있다.
+      퓨즈를 끊어 불량 행/열을 여분으로 대체하면 양품이 된다.
+  - id: fail
+    label: Fail
+    rule: |
+      (a) 여분이 모자라 fail bit을 다 덮지 못하거나,
+      (b) 리페어로 대체할 수 없는 칩 전체 특성 불량(오픈/쇼트, 전류 규격 초과)이 있다.
+    note: |
+      (b)가 중요하다. 여분 행·열은 **셀 어레이**를 대체하는 자원이다.
+      전류가 규격을 넘거나 배선이 끊긴 것은 대체할 대상이 없어 리페어가 성립하지 않는다.
+
+# ---------------------------------------------------------------------------
+# 리페어 분석 (must-repair 우선 탐색)
+# ---------------------------------------------------------------------------
+repair_analysis:
+  steps:
+    - "1. fail bit의 주소를 (X=row, Y=column)으로 모은다."
+    - "2. 어떤 row의 fail 수가 남은 여분 열 개수보다 많으면, 그 row는 열로 덮을 수 없다
+          → 반드시 행 리페어를 배정한다 (must-repair row)."
+    - "3. 어떤 column의 fail 수가 남은 여분 행 개수보다 많으면 → 반드시 열 리페어 (must-repair column)."
+    - "4. 강제 배정을 마친 뒤 남은 fail을 남은 여분으로 덮을 수 있는지 탐색한다."
+    - "5. 전부 덮이면 Repairable, 남으면 Fail."
+  note: |
+    2·3단계가 'must-repair'다. 선택의 여지가 없는 배정을 먼저 확정해 탐색 범위를 줄인다.
