@@ -1,15 +1,23 @@
-# Module A/C 공통
-numpy>=2.0
-pandas>=2.2
-scipy>=1.13
-pyarrow>=16.0          # parquet 입출력
-scikit-learn>=1.5
-matplotlib>=3.9
+# ---------------------------------------------------------------------------
+# 환경 제약 (Intel Mac, x86_64, macOS 15.7)
+#   - PyTorch는 2.2.2가 macOS x86_64 마지막 지원 버전이다. 2.3+ 는 휠이 없다.
+#   - torch 2.2.2는 NumPy 1.x ABI로 빌드되어 NumPy 2.x와 함께 쓸 수 없다.
+#     → numpy<2 로 고정하고, 그에 맞춰 pandas도 2.x 계열로 고정한다.
+#   - CPU 전용. CUDA/MPS 가속 없음.
+# 재현성을 위해 시스템 파이썬이 아니라 .venv 안에서만 설치한다.
+# ---------------------------------------------------------------------------
+
+numpy>=1.26,<2
+pandas>=2.2,<3
+scipy>=1.11,<1.14
+pyarrow>=15.0          # parquet 입출력
+scikit-learn>=1.4,<1.6
+matplotlib>=3.8,<4
 PyYAML>=6.0
 
-# Module A-3 / B-2 (딥러닝)
-torch>=2.3
-torchvision>=0.18
+# Module A-3 / B-2 (딥러닝, CPU)
+torch==2.2.2
+torchvision==0.17.2
 Pillow>=10.0
 
 # Module C-4
