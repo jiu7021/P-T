@@ -127,14 +127,22 @@ footer{padding:16px 22px;color:var(--muted);font-size:11.5px;border-top:1px soli
         </div>
         <div>
           <canvas id="wcam" width="320" height="320"></canvas>
-          <div style="font-size:11.5px;color:var(--muted);margin-top:5px">Grad-CAM 근거 영역 (붉을수록 기여 큼)</div>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:5px">판단 근거 영역 (붉을수록 크게 기여)</div>
         </div>
       </div>
     </div>
     <div class="panel">
       <h3>분류 결과와 특징</h3>
       <div id="winfo"></div>
-    </div>
+      <details style="margin-top:14px">
+        <summary style="cursor:pointer;font-size:12.5px;font-weight:600">근거 영역(Grad-CAM)이 무엇인가</summary>
+        <p style="font-size:12px;color:var(--muted);margin:7px 0 0">
+          모델이 "이 웨이퍼는 가장자리 링 패턴이다"라고 답했을 때, <b>어느 자리를 보고 그렇게
+          판단했는지</b>를 열지도로 표시한 것입니다. 모델이 낸 점수를 마지막 합성곱 층의
+          특징맵으로 미분해, 그 판단에 크게 기여한 위치일수록 붉게 칠합니다.
+          라벨만 내놓지 않고 근거를 함께 보여주기 위해 넣었습니다.
+          붉은 영역이 실제 불량 분포와 어긋나면, 그 예측은 의심해야 한다는 신호입니다.</p>
+      </details>
   </div>
 </section>
 
@@ -146,28 +154,34 @@ footer{padding:16px 22px;color:var(--muted);font-size:11.5px;border-top:1px soli
     숫자에 임의로 결함 용어를 붙이지 않고, <b>마스크에서 측정한 형태</b>를 근거로 원인 공정 후보를 조회합니다.
     Carinthia-S가 어느 공정 층인지도 공개되지 않았으므로, 후보는 "이 형태의 결함이 일반적으로 어느 공정에서
     비롯되는가"이지 "이 이미지의 원인이 무엇인가"가 아닙니다.</div>
-  <div class="grid" style="grid-template-columns:280px minmax(340px,1fr) minmax(320px,460px)">
+  <div class="grid" style="grid-template-columns:250px minmax(420px,1fr) minmax(330px,480px)">
     <div class="panel">
       <h3>이미지 선택</h3>
-      <select id="ssel" size="18" style="height:380px"></select>
+      <select id="ssel" size="17" style="height:360px"></select>
       <div style="margin-top:8px;font-size:12px;color:var(--muted)" id="scount"></div>
     </div>
     <div class="panel">
-      <h3>원본 · 정답 · 예측
-        <label style="font-weight:400;font-size:12px;margin-left:10px;cursor:pointer">
-          <input type="checkbox" id="sstretch" checked> 대비 강조(표시용)</label></h3>
-      <p style="font-size:11.5px;color:var(--muted);margin:-4px 0 8px">
-        원본 SEM은 밝기 표준편차 중앙값이 10.8(0~255)로 매우 낮아 그대로는 결함이 잘 보이지 않습니다.
-        대비 강조는 2~98 백분위로 선형 스트레칭한 <b>표시용 처리</b>이며, 모델 입력이나 측정값은
-        원본 그대로를 씁니다.</p>
-      <div class="flex">
-        <div><canvas id="simg" width="192" height="192"></canvas>
-          <div style="font-size:11.5px;color:var(--muted)">원본 SEM (128×128로 축소)</div></div>
-        <div><canvas id="sgt" width="192" height="192"></canvas>
-          <div style="font-size:11.5px;color:var(--muted)"><span style="color:#2ea043">■</span> 전문가 정답 마스크</div></div>
-        <div><canvas id="spr" width="192" height="192"></canvas>
-          <div style="font-size:11.5px;color:var(--muted)"><span style="color:#e5534b">■</span> 모델 예측 마스크</div></div>
+      <h3>결함 위치 <span id="stitle" style="font-weight:400;color:var(--muted);font-size:12.5px"></span></h3>
+      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:9px">
+        <div>
+          <label class="rng" style="margin-bottom:3px">표시</label>
+          <select id="sovl" style="width:190px">
+            <option value="pred" selected>모델이 지목한 위치 (빨강)</option>
+            <option value="gt">전문가 정답 (초록)</option>
+            <option value="both">둘 다 겹쳐 보기</option>
+            <option value="none">원본만</option>
+          </select>
+        </div>
+        <label style="font-size:12.5px;cursor:pointer;margin-top:16px">
+          <input type="checkbox" id="sstretch" checked> 대비 강조(표시용)</label>
+        <label style="font-size:12.5px;cursor:pointer;margin-top:16px">
+          <input type="checkbox" id="soutline"> 윤곽선만</label>
       </div>
+      <canvas id="sbig" width="420" height="420" style="width:100%;max-width:420px"></canvas>
+      <p style="font-size:11.5px;color:var(--muted);margin:6px 0 0">
+        원본 SEM은 밝기 표준편차 중앙값이 10.8(0~255)로 매우 낮아 그대로는 결함이 잘 보이지 않습니다.
+        대비 강조는 2~98 백분위로 선형 스트레칭한 <b>표시용 처리</b>이며, 모델 입력과 형태 측정값은
+        원본 그대로를 씁니다.</p>
       <div id="sinfo" style="margin-top:12px"></div>
     </div>
     <div class="panel">
@@ -228,6 +242,14 @@ footer{padding:16px 22px;color:var(--muted);font-size:11.5px;border-top:1px soli
       <h3>판별 결과와 근거</h3>
       <div id="fres"></div>
     </div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <h3>불량 모드는 어떤 공정 문제에서 나오나</h3>
+    <p style="font-size:12px;color:var(--muted);margin-top:0">
+      아래 문헌은 서지(저자·저널·권·호·페이지·DOI)를 Crossref로 대조해 확인했습니다.
+      다만 본문을 직접 읽어 검증하지는 않았으므로 <b>제목에서 확실히 알 수 있는 범위</b>까지만
+      근거로 씁니다.</p>
+    <div id="fmodes" class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))"></div>
   </div>
 </section>
 
@@ -306,7 +328,14 @@ python src/model/feedback.py stats</pre>
       Module A와 B를 <b>같은 웨이퍼의 데이터인 것처럼 연결하지 않습니다.</b>
       대시보드가 잇는 것은 업무 흐름의 재현이지 동일 웨이퍼 추적이 아닙니다.</p></div>
     <div class="panel"><h3>주요 한계</h3><div id="limits"></div></div>
-    <div class="panel"><h3>모델 성능 (참고용)</h3><div id="perf"></div></div>
+    <div class="panel">
+      <h3>모델 성능</h3>
+      <p style="font-size:12px;color:var(--muted);margin-top:0">
+        이 프로젝트가 주장하는 것은 모델 성능이 아닙니다. 분석 흐름의 설계와 판단 근거의
+        가시화입니다. 아래 수치는 흐름이 성립하는지 확인하는 하한선으로만 봅니다.</p>
+      <details><summary style="cursor:pointer;font-size:12.5px;font-weight:600">수치 펼치기</summary>
+        <div id="perf" style="margin-top:10px"></div></details>
+    </div>
   </div>
 </section>
 

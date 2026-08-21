@@ -2,6 +2,28 @@
 // 브라우저 저장소(localStorage 등)도 쓰지 않는다.
 const D = JSON.parse(document.getElementById('payload').textContent);
 const $ = (id) => document.getElementById(id);
+
+// 영어 라벨은 데이터셋 원본 표기다. 화면에는 한글 설명을 함께 보인다.
+const PAT_KO = {
+  'none': '패턴 없음', 'Center': '중심부 밀집', 'Donut': '도넛(고리형)',
+  'Edge-Loc': '가장자리 국부', 'Edge-Ring': '가장자리 링', 'Loc': '국부 밀집',
+  'Random': '산발', 'Scratch': '긁힘(선상)', 'Near-full': '거의 전면',
+};
+const PAT_DESC = {
+  'none': '불량이 없다는 뜻이 아니다. 산발 불량은 있으나 뚜렷한 공간 패턴을 이루지 않는 상태.',
+  'Center': '웨이퍼 중심 쪽에 불량이 몰린 형태.',
+  'Donut': '중심과 가장자리 사이에 고리 모양으로 불량이 몰린 형태.',
+  'Edge-Loc': '가장자리 일부 구간에만 불량이 몰린 형태.',
+  'Edge-Ring': '가장자리를 따라 링 전체에 불량이 도는 형태.',
+  'Loc': '웨이퍼 어딘가 한 곳에 불량이 뭉친 형태.',
+  'Random': '불량이 웨이퍼 전면에 흩어진 형태. 공간 상관이 약하다.',
+  'Scratch': '가늘고 긴 선을 따라 불량이 늘어선 형태.',
+  'Near-full': '웨이퍼 대부분이 불량인 상태.',
+};
+const MORPH_KO = {
+  'linear_fine': '가늘고 긴 선상', 'linear_broad': '굵거나 불규칙한 선상',
+  'compact': '둥근 덩어리형', 'none': '결함 없음',
+};
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
 // ---------- 탭 ----------
@@ -17,11 +39,11 @@ const W = D.wafers;
   W.forEach((w, i) => {
     const o = document.createElement('option');
     o.value = i;
-    o.textContent = `${w.true_label.padEnd(10)} ${w.correct ? '  ' : '✗ '}${w.wafer_id}`;
+    o.textContent = `${(PAT_KO[w.true_label] || w.true_label).padEnd(8, '\u3000')} ${w.correct ? '  ' : '✗ '}${w.wafer_id}`;
     sel.appendChild(o);
   });
   const wrong = W.filter(w => !w.correct).length;
-  $('wcount').textContent = `${W.length}장 (test 분할) · 오분류 ${wrong}장 포함 (✗ 표시)`;
+  $('wcount').textContent = `${W.length}장 · 오분류 ${wrong}장 포함(✗). 잘 맞은 것만 고르지 않았습니다.`;
   sel.onchange = () => drawWafer(+sel.value);
   sel.value = 0;
   drawWafer(0);
@@ -71,15 +93,16 @@ function drawWafer(i) {
   const f = w.feat_summary;
   $('winfo').innerHTML = `
     <div class="kv">
-      <b>실제 라벨</b><span>${w.true_label}</span>
-      <b>예측 라벨</b><span class="${w.correct ? 'ok' : 'bad'}">${w.pred_label} ${w.correct ? '(일치)' : '(불일치)'}</span>
+      <b>실제 패턴</b><span>${PAT_KO[w.true_label] || w.true_label} <span style="color:var(--muted);font-size:11px">${w.true_label}</span></span>
+      <b>모델 예측</b><span class="${w.correct ? 'ok' : 'bad'}">${PAT_KO[w.pred_label] || w.pred_label} ${w.correct ? '(일치)' : '(불일치)'}</span>
+      <b>패턴 뜻</b><span style="font-size:11.5px;color:var(--muted)">${PAT_DESC[w.true_label] || ''}</span>
       <b>다이 수</b><span>${w.die_count.toLocaleString()}</span>
       <b>불량 다이</b><span>${w.fail_count.toLocaleString()} (${(w.fail_rate * 100).toFixed(2)}%)</span>
     </div>
     <h3 style="margin-top:14px">클래스 확률 상위 4</h3>
     ${top.map(([k, v]) => `<div style="margin-bottom:6px">
       <div style="display:flex;justify-content:space-between;font-size:12.5px">
-        <span>${k}</span><span class="mono">${(v * 100).toFixed(1)}%</span></div>
+        <span>${PAT_KO[k] || k}</span><span class="mono">${(v * 100).toFixed(1)}%</span></div>
       <div class="bar"><i style="width:${(v * 100).toFixed(1)}%"></i></div></div>`).join('')}
     <h3 style="margin-top:14px">공간 특징 요약</h3>
     <div class="kv">
@@ -88,9 +111,7 @@ function drawWafer(i) {
       <b>가장자리 거리 평균</b><span>${f.edge_dist_mean}</span>
       <b>직전 웨이퍼 정보</b><span>${f.prev_wafer_available ? '있음' : '없음(로트 첫 웨이퍼 등)'}</span>
     </div>
-    <p style="font-size:11.5px;color:var(--muted);margin-top:10px">
-      Grad-CAM은 예측 클래스 점수에 대한 마지막 conv 특징맵의 기울기를 채널 중요도로 삼아
-      가중합한 것입니다. 붉은 영역이 그 판단에 크게 기여한 자리입니다.</p>`;
+`;
 }
 
 // ================= 탭 2: SEM =================
@@ -100,14 +121,13 @@ const SEM = D.sem.items, CAUSE = D.sem.cause_map;
   SEM.forEach((s, i) => {
     const o = document.createElement('option');
     o.value = i;
-    o.textContent = `${s.morphology.padEnd(13)} L${s.label}  ` +
-      (s.dice === null ? '정답 마스크 없음' : `Dice ${s.dice.toFixed(3)}`);
+    o.textContent = `${(MORPH_KO[s.morphology] || s.morphology).padEnd(11, '\u3000')} 라벨 ${s.label}`;
     sel.appendChild(o);
   });
-  $('scount').textContent = `${SEM.length}장 (test 분할). 형태 유형별로 Dice 하위·중앙·상위를 섞어 골랐습니다. `
-    + `정답 마스크가 비어 있는 none 그룹은 Dice가 정의되지 않습니다.`;
-  sel.onchange = () => drawSem(+sel.value);
-  $('sstretch').onchange = () => drawSem(+sel.value);
+  $('scount').textContent = `${SEM.length}장. 형태별로 잘 맞은 것과 못 맞은 것을 섞어 골랐습니다.`;
+  const redraw = () => drawSem(+sel.value);
+  sel.onchange = redraw;
+  ['sstretch', 'soutline', 'sovl'].forEach(id => $(id).onchange = redraw);
   sel.value = 0;
   drawSem(0);
 }
@@ -140,57 +160,73 @@ function stretch(g, S) {
 }
 
 function drawSem(i) {
-  const s = SEM[i], N = 128, S = 192;
-  const useStretch = $('sstretch').checked;
+  const s = SEM[i], N = 128, S = 420;
+  const mode = $('sovl').value, useStretch = $('sstretch').checked,
+        outline = $('soutline').checked;
+  $('stitle').textContent = `${MORPH_KO[s.morphology] || s.morphology} · 데이터셋 라벨 ${s.label}`;
+
   const img = new Image();
   img.onload = () => {
-    for (const [cid, rleArr, color] of [['simg', null, null],
-                                        ['sgt', s.gt_rle, [46, 160, 67]],
-                                        ['spr', s.pred_rle, [229, 83, 75]]]) {
-      const c = $(cid), g = c.getContext('2d');
-      g.imageSmoothingEnabled = false;
-      g.clearRect(0, 0, S, S);
-      g.drawImage(img, 0, 0, S, S);
-      if (useStretch) stretch(g, S);
-      if (!rleArr) continue;
-      const m = rleToMask(rleArr, N * N);
-      const px = S / N;
-      g.fillStyle = `rgba(${color[0]},${color[1]},${color[2]},0.55)`;
-      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++)
-        if (m[y * N + x]) g.fillRect(x * px, y * px, px, px);
+    const c = $('sbig'), g = c.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    g.clearRect(0, 0, S, S);
+    g.drawImage(img, 0, 0, S, S);
+    if (useStretch) stretch(g, S);
+
+    const px = S / N;
+    const layers = [];
+    if (mode === 'gt' || mode === 'both') layers.push([s.gt_rle, [46, 160, 67]]);
+    if (mode === 'pred' || mode === 'both') layers.push([s.pred_rle, [229, 60, 45]]);
+
+    for (const [r, col] of layers) {
+      const m = rleToMask(r, N * N);
+      if (outline) {
+        // 윤곽선만: 이웃 중 하나라도 배경이면 경계 픽셀이다
+        g.fillStyle = `rgb(${col[0]},${col[1]},${col[2]})`;
+        for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+          if (!m[y * N + x]) continue;
+          const edge = (x === 0 || !m[y * N + x - 1]) || (x === N - 1 || !m[y * N + x + 1]) ||
+                       (y === 0 || !m[(y - 1) * N + x]) || (y === N - 1 || !m[(y + 1) * N + x]);
+          if (edge) g.fillRect(x * px, y * px, px, px);
+        }
+      } else {
+        g.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},0.5)`;
+        for (let y = 0; y < N; y++) for (let x = 0; x < N; x++)
+          if (m[y * N + x]) g.fillRect(x * px, y * px, px, px);
+      }
     }
   };
   img.src = s.img;
 
   const sh = s.shape;
+  const el = sh.elongation === null ? '∞ (완전 직선)' : sh.elongation;
   $('sinfo').innerHTML = `
     <div class="kv">
-      <b>파일</b><span class="mono" style="font-size:11px">${s.filename}</span>
-      <b>데이터셋 라벨</b><span>${s.label} <span style="color:var(--muted)">(이름 비공개)</span></span>
-      <b>측정된 형태</b><span><b>${s.morphology}</b></span>
-      <b>결함 면적</b><span>${(sh.area_frac * 100).toFixed(3)}%</span>
-      <b>가늘기(elongation)</b><span>${sh.elongation === null ? '∞ (완전 직선)' : sh.elongation}</span>
-      <b>연결 성분 수</b><span>${sh.n_components}</span>
-      <b>채움률 / 원형도</b><span>${sh.solidity ?? '-'} / ${sh.circularity ?? '-'}</span>
-      <b>세그멘테이션 Dice</b><span class="${s.dice === null ? '' : (s.dice >= 0.8 ? 'ok' : 'bad')}">${
-        s.dice === null
-          ? '<span style="color:var(--muted)">정의 불가 — 정답 마스크가 비어 있음</span>'
-          : s.dice.toFixed(4)}</span>
-      <b>정답 / 예측 픽셀</b><span>${s.gt_px} / ${s.pred_px}${
+      <b>측정된 형태</b><span><b>${MORPH_KO[s.morphology] || s.morphology}</b>
+        <span style="color:var(--muted);font-size:11px">${s.morphology}</span></span>
+      <b>결함이 차지한 면적</b><span>${(sh.area_frac * 100).toFixed(3)}%</span>
+      <b>길이 대 폭 비</b><span>${el} <span style="color:var(--muted);font-size:11px">클수록 가늘고 길다</span></span>
+      <b>덩어리 개수</b><span>${sh.n_components}</span>
+      <b>모델이 지목한 범위</b><span>${
         s.gt_px === 0
-          ? (s.pred_px === 0 ? ' <span class="ok">← 오검출 없음</span>' : ' <span class="bad">← 오검출</span>')
-          : (s.pred_px < s.gt_px * 0.6 ? ' <span class="bad">← 과소 검출</span>' : '')}</span>
-      <b>분류 예측</b><span>${s.cls_pred} ${s.cls_pred === s.label ? '<span class="ok">(일치)</span>' : '<span class="bad">(불일치)</span>'}</span>
-    </div>`;
+          ? (s.pred_px === 0 ? '없음 <span class="ok">— 전문가 정답도 없음(일치)</span>'
+                             : `${s.pred_px}px <span class="bad">— 전문가 정답은 없음(오검출)</span>`)
+          : `${s.pred_px}px (전문가 표시 ${s.gt_px}px)` +
+            (s.pred_px < s.gt_px * 0.6 ? ' <span class="bad">— 실제보다 좁게 잡음</span>' : '')}</span>
+      <b>파일</b><span class="mono" style="font-size:11px">${s.filename}</span>
+    </div>
+    <p style="font-size:11.5px;color:var(--muted);margin:8px 0 0">
+      데이터셋이 결함 클래스 이름을 공개하지 않아 라벨은 숫자뿐입니다. 숫자에 임의로 결함 용어를
+      붙이지 않고, 마스크에서 <b>실제로 측정한 형태</b>로 원인 공정 후보를 조회합니다.</p>`;
 
   const rules = CAUSE.morphology_rules;
   const cands = CAUSE.morphologies[s.morphology].candidates;
   const obs = CAUSE.morphologies[s.morphology].observed_in_dataset;
   $('scand').innerHTML = `
     <p style="font-size:12px;color:var(--muted);margin-top:0">
-      형태 판정 기준: <span class="mono">${rules.measure}</span> —
-      compact &lt;3, linear_broad 3~30, linear_fine ≥30.
-      임계값은 정답 마스크 4,365장의 실측 분포에서 두 군집 사이가 비는 지점으로 정했습니다.</p>
+      형태 판정: 길이 대 폭 비가 3 미만이면 둥근 덩어리형, 3~30이면 굵거나 불규칙한 선상,
+      30 이상이면 가늘고 긴 선상. 임계값은 정답 마스크 4,365장의 실측 분포에서
+      두 무리 사이가 비는 지점으로 정했습니다.</p>
     <p style="font-size:12px;color:var(--muted)">데이터셋 관측: ${obs.note}</p>
     ${cands.map((c, k) => `<div class="cand">
       <div class="proc">[${k + 1}] ${c.process}${c.sub ? ' / ' + c.sub : ''}</div>
@@ -316,6 +352,8 @@ function fRender() {
   $('fres').innerHTML = `
     <div style="font-size:17px;font-weight:700;margin-bottom:4px">
       ${MODE_LABEL[res.mode]} <span style="font-size:13px;color:var(--muted)">(${res.mode})</span></div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:8px;white-space:pre-line">${
+      ((D.fail_address.modes || {})[res.mode] || {}).plain?.trim() || ''}</div>
     <div style="margin-bottom:10px">설명 비율 <b class="mono">${res.score.toFixed(3)}</b>
       ${res.ambiguous ? `<span class="bad"> ← 경계 사례 (차상위 ${MODE_LABEL[res.runner[0]]} ${res.runner[1].toFixed(3)}, 차이 ${AMB} 미만)</span>` : ''}</div>
     <h3>근거</h3>
@@ -352,6 +390,19 @@ $('fgen').onclick = fGen;
   fRender();
 });
 fGen();
+
+// 불량 모드가 어떤 공정 문제에서 나오는지 — config/fail_modes.yaml 그대로 표시한다
+{
+  const M = D.fail_address.modes || {};
+  $('fmodes').innerHTML = Object.entries(M).map(([k, v]) => `
+    <div class="cand">
+      <div class="proc">${v.label} <span style="font-weight:400;color:var(--muted);font-size:12px">${k}</span></div>
+      <div class="rat" style="white-space:pre-line">${(v.plain || '').trim()}</div>
+      <div style="font-size:12.5px;margin-top:7px">
+        <b style="color:var(--muted)">관련 공정</b><br>${(v.process_link || '').trim()}</div>
+      ${(v.reference || []).map(r => `<div class="ref">출처: ${r}</div>`).join('')}
+    </div>`).join('');
+}
 
 // ================= 탭 5: 한계 · 성능 =================
 {

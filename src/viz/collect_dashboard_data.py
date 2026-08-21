@@ -210,6 +210,9 @@ def main() -> int:
     pat_eval = json.loads((PROCESSED / "pattern_eval.json").read_text(encoding="utf-8"))
     def_eval = json.loads((PROCESSED / "defect_eval.json").read_text(encoding="utf-8"))
     fail_cfg = json.loads((PROCESSED / "fail_address_demo.json").read_text(encoding="utf-8"))
+    import yaml
+    with open(ROOT / "config" / "fail_modes.yaml", encoding="utf-8") as f:
+        fail_modes = yaml.safe_load(f)["modes"]
 
     data = {
         "meta": {
@@ -228,7 +231,8 @@ def main() -> int:
         "defect_eval": def_eval,
         "fail_address": {"address_space": fail_cfg["address_space"],
                          "rules": fail_cfg["rules"],
-                         "modes_meta": fail_cfg["meta"]},
+                         "modes_meta": fail_cfg["meta"],
+                         "modes": fail_modes},
     }
     out = PROCESSED / "dashboard_data.json"
     out.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":"), default=str),
