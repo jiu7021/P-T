@@ -720,6 +720,65 @@ fGen();
       번호로만 식별됩니다. <b>어느 장비의 무슨 물리량인지 알 수 없어 공정 개선 조치로
       연결할 수 없습니다.</b> 이것도 공개 데이터의 한계입니다.</p>`;
 
+  // ---- 관리도 ----
+  const DR = S.drift;
+  const names = Object.keys(DR.series);
+  {
+    const sel = $('dr_sel');
+    names.forEach((c, i) => {
+      const s2 = DR.series[c];
+      const o = document.createElement('option');
+      o.value = i;
+      o.textContent = `${c}  이탈 ${(s2.out_rate * 100).toFixed(1)}%`;
+      sel.appendChild(o);
+    });
+    sel.onchange = () => drawCtrl(+sel.value);
+    sel.value = 0;
+    const kc = DR.kind_counts || {};
+    $('dr_kinds').innerHTML = `전체 ${DR.n_sensor}개 센서 중<br>정상 ${kc['정상']} ·
+      드리프트 ${kc['드리프트(지속)']} · excursion ${kc['excursion(일시)']}`;
+    drawCtrl(0);
+  }
+
+  $('dr_kind').innerHTML = `
+    <table><tr><th>성격</th><th>센서 수</th><th>실무 대응</th></tr>
+      <tr><td>정상</td><td>${DR.kind_counts['정상']}</td><td style="text-align:left">—</td></tr>
+      <tr><td><b>드리프트(지속)</b></td><td>${DR.kind_counts['드리프트(지속)']}</td>
+        <td style="text-align:left">보정 · 예방 정비</td></tr>
+      <tr><td><b>excursion(일시)</b></td><td>${DR.kind_counts['excursion(일시)']}</td>
+        <td style="text-align:left">해당 기간 웨이퍼 격리 · 원인 조사</td></tr>
+    </table>
+    <table style="margin-top:10px"><tr><th>센서</th><th>성격</th><th>최대 이탈</th><th>현재</th></tr>
+      ${DR.kind_examples.map(k => `<tr><td class="mono">${k.sensor}</td><td>${k.kind}</td>
+        <td class="mono">${k.peak_sigma.toFixed(1)}σ</td>
+        <td class="mono ${k.now_sigma > 1 ? 'bad' : 'ok'}">${k.now_sigma.toFixed(1)}σ</td></tr>`).join('')}
+    </table>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:0">
+      s275의 구간별 이탈은 <span class="mono">… 0.1, 0.1, 836.9, 900.2, 0.8</span>입니다.
+      두 구간에서만 900배 튀었다가 <b>정상 복귀</b>했습니다. 지속적 이동이 아닙니다.</p>`;
+
+  const ex = DR.excursion_test;
+  $('dr_exc').innerHTML = `
+    <p style="font-size:12.5px;margin-top:0">개별 센서로는 합불이 갈리지 않습니다
+      (Cohen's d &gt; 0.8인 센서 <b>0개</b>). 그렇다면 <b>여러 센서가 동시에 관리 한계를
+      벗어난 상태</b>는 어떤가 — 이것이 관리도의 실제 사용법입니다.</p>
+    <p style="font-size:12px;color:var(--muted)">웨이퍼별 3σ 이탈 센서 수: 중앙 ${ex.median_out}개,
+      최대 ${ex.max_out}개. 이탈 센서가 <b>${ex.threshold_sensors}개를 넘는 웨이퍼</b>(상위 5%)를
+      이상으로 정의했습니다 <span style="color:var(--warn)">(가정치)</span>.</p>
+    <table>
+      <tr><th>구간</th><th>웨이퍼</th><th>fail</th><th>fail률</th></tr>
+      <tr style="background:var(--chip-syn-bg)"><td><b>이상</b></td><td>${ex.n_abnormal}</td>
+        <td>${ex.fail_abnormal}</td><td class="bad"><b>${(ex.rate_abnormal * 100).toFixed(2)}%</b></td></tr>
+      <tr><td>정상</td><td>${ex.n_normal.toLocaleString()}</td><td>${ex.fail_normal}</td>
+        <td>${(ex.rate_normal * 100).toFixed(2)}%</td></tr>
+    </table>
+    <p style="font-size:13px;margin-top:9px"><b>배수 ${ex.ratio.toFixed(2)}x, 오즈비
+      ${ex.odds_ratio.toFixed(2)}, Fisher 정확검정 p = ${ex.p_value.toFixed(4)}</b>
+      — ${ex.p_value < 0.05 ? '<span class="ok">통계적으로 유의합니다.</span>' : '유의하지 않습니다.'}</p>
+    <p style="font-size:12.5px;margin-bottom:0">이 데이터에서 쓸 수 있는 규칙은
+      "센서 A가 높으면 불량"이 아니라 <b>"공정이 평소와 다른 상태인 웨이퍼를 우선 검사하라"</b>입니다.
+      실데이터에서 합성 없이, 유의수준 1%에서 나온 결과입니다.</p>`;
+
   $('sc_concl').innerHTML = `
     <ol style="font-size:13px;padding-left:20px;margin:0">
       <li><b>시간 순 분할 조건에서 이 데이터만으로는 웨이퍼 합불 예측이 사실상 되지 않습니다.</b>
@@ -732,6 +791,82 @@ fGen();
     <p style="font-size:13px;margin-bottom:0">이 모듈의 값어치는 예측 성능이 아니라
       <b>평가 방식이 결론을 바꾼다는 것을 같은 데이터로 보인 것</b>입니다.
       실제 라인에 올릴 모델이라면 시간 순 검증을 통과해야 합니다.</p>`;
+}
+
+function drawCtrl(i) {
+  const S = D.secom, DR = S.drift;
+  const name = Object.keys(DR.series)[i], sr = DR.series[name];
+  const v = sr.values, fail = DR.is_fail, n = v.length;
+  const c = $('dr_chart'), g = c.getContext('2d');
+  const W = c.width, H = c.height, L = 58, R = 12, T = 12, B = 26;
+  g.clearRect(0, 0, W, H);
+
+  // y 범위: 관리 한계와 실제 값을 모두 담되, 극단값에 눌리지 않게 분위로 자른다
+  const fin = v.filter(x => x !== null).slice().sort((a, b) => a - b);
+  const q = (p) => fin[Math.min(fin.length - 1, Math.max(0, Math.floor(fin.length * p)))];
+  let lo = Math.min(q(0.005), sr.lcl), hi = Math.max(q(0.995), sr.ucl);
+  if (hi === lo) { hi = lo + 1; }
+  const pad = (hi - lo) * 0.08;
+  lo -= pad; hi += pad;
+  const X = (k) => L + (k / (n - 1)) * (W - L - R);
+  const Y = (val) => T + (1 - (val - lo) / (hi - lo)) * (H - T - B);
+
+  // 축
+  g.strokeStyle = css('--border'); g.lineWidth = 1;
+  g.beginPath(); g.moveTo(L, T); g.lineTo(L, H - B); g.lineTo(W - R, H - B); g.stroke();
+  g.fillStyle = css('--muted'); g.font = '10px ui-monospace, monospace';
+  g.textAlign = 'right';
+  for (const val of [lo + pad, sr.mu, hi - pad]) {
+    g.fillText(val.toPrecision(3), L - 5, Y(val) + 3);
+  }
+  // 기준 구간 끝 표시
+  const bEnd = Math.floor(n * DR.baseline_frac);
+  g.strokeStyle = css('--accent'); g.setLineDash([3, 3]);
+  g.beginPath(); g.moveTo(X(bEnd), T); g.lineTo(X(bEnd), H - B); g.stroke();
+  g.setLineDash([]);
+  g.textAlign = 'left'; g.fillStyle = css('--accent');
+  g.fillText('기준 구간 끝', X(bEnd) + 4, T + 10);
+
+  // 관리 한계
+  g.strokeStyle = css('--bad'); g.setLineDash([5, 4]); g.lineWidth = 1;
+  for (const lim of [sr.ucl, sr.lcl]) {
+    if (lim < lo || lim > hi) continue;
+    g.beginPath(); g.moveTo(L, Y(lim)); g.lineTo(W - R, Y(lim)); g.stroke();
+  }
+  g.setLineDash([]);
+  // 평소 평균
+  g.strokeStyle = css('--muted'); g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(L, Y(sr.mu)); g.lineTo(W - R, Y(sr.mu)); g.stroke();
+
+  // 측정값
+  g.strokeStyle = css('--text'); g.globalAlpha = 0.45; g.lineWidth = 1;
+  g.beginPath();
+  let started = false;
+  for (let k = 0; k < n; k++) {
+    if (v[k] === null) { started = false; continue; }
+    const y = Y(Math.min(Math.max(v[k], lo), hi));
+    if (!started) { g.moveTo(X(k), y); started = true; } else { g.lineTo(X(k), y); }
+  }
+  g.stroke(); g.globalAlpha = 1;
+
+  // 불량 웨이퍼
+  g.fillStyle = css('--bad');
+  for (let k = 0; k < n; k++) {
+    if (!fail[k] || v[k] === null) continue;
+    g.beginPath(); g.arc(X(k), Y(Math.min(Math.max(v[k], lo), hi)), 2.2, 0, 6.283); g.fill();
+  }
+
+  const kindRow = (DR.kind_examples || []).find(x => x.sensor === name);
+  $('dr_info').innerHTML = `
+    <div class="kv">
+      <b>센서</b><span class="mono">${name}</span>
+      <b>평소 평균 ± 3σ</b><span class="mono">${sr.mu.toPrecision(4)} ± ${(3 * sr.sd).toPrecision(3)}
+        → 한계 [${sr.lcl.toPrecision(4)}, ${sr.ucl.toPrecision(4)}]</span>
+      <b>감시 구간 이탈률</b><span class="${sr.out_rate > 0.05 ? 'bad' : ''}">${(sr.out_rate * 100).toFixed(2)}%</span>
+      <b>평균 이동</b><span>${sr.shift_sigma.toFixed(2)}σ${kindRow ? ` · <b>${kindRow.kind}</b>` : ''}</span>
+      <b>pass/fail 분리도</b><span>Cohen's d = ${sr.cohens_d.toFixed(2)}
+        <span style="color:var(--muted)">(0.8 이상이면 큼 — 이 데이터에는 하나도 없음)</span></span>
+    </div>`;
 }
 
 // ================= 탭 5: 한계 · 성능 =================
