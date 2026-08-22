@@ -26,6 +26,7 @@ WM811K_BYTES = 344_542_743
 CARINTHIA_URL = "https://zenodo.org/records/16895427/files/data.zip?download=1"
 CARINTHIA_BYTES = 139_225_942  # 실측 (Zenodo 표기 139.2 MB)
 CARINTHIA_DOC_URL = "https://zenodo.org/records/16895427/files/carinthia-s_dataset.html?download=1"
+SECOM_URL = "https://archive.ics.uci.edu/static/public/179/secom.zip"
 
 
 def _download(url: str, dest: Path, expect_bytes: int | None = None) -> Path:
@@ -90,9 +91,22 @@ def fetch_carinthia() -> None:
     _download(CARINTHIA_DOC_URL, RAW / "carinthia_s" / "carinthia-s_dataset.html")
 
 
+def fetch_secom() -> None:
+    """UCI SECOM — 실제 fab 라인 공정 센서 데이터. 인증 불필요."""
+    print("[SECOM]")
+    zip_path = _download(SECOM_URL, RAW / "secom" / "secom.zip")
+    if (RAW / "secom" / "secom.data").exists():
+        print(f"  이미 풀림: secom.data")
+        return
+    with zipfile.ZipFile(zip_path) as z:
+        z.extractall(RAW / "secom")
+    print(f"  완료: {RAW / 'secom'}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--only", choices=["wm811k", "carinthia"], help="한쪽만 받는다")
+    ap.add_argument("--only", choices=["wm811k", "carinthia", "secom"],
+                    help="하나만 받는다")
     args = ap.parse_args()
 
     free_gb = shutil.disk_usage(ROOT).free / 1e9
@@ -105,6 +119,8 @@ def main() -> int:
         fetch_wm811k()
     if args.only in (None, "carinthia"):
         fetch_carinthia()
+    if args.only in (None, "secom"):
+        fetch_secom()
     print("\n출처와 라이선스: docs/data_sources.md")
     return 0
 
