@@ -79,7 +79,7 @@ footer{padding:16px 22px;color:var(--muted);font-size:11.5px;border-top:1px soli
 </style>
 <header>
   <h1>P&amp;T 불량 분석 · 테스트 정책 워크벤치</h1>
-  <div class="sub">웨이퍼 테스트(전기 시험) → 다이 등급 판정 → Fail Address 불량 모드 → (걸러진 다이는) FA 결함 분석</div>
+  <div class="sub">공정 센서 관리도 → 웨이퍼 전기 시험 판정 → 칩 내부 Fail Address → (걸러진 다이는) FA 결함 분석</div>
   <div class="chips">
     <span class="chip real">웨이퍼 맵 = WM-811K 실데이터</span>
     <span class="chip real">SEM = Carinthia-S 실데이터</span>
@@ -88,13 +88,12 @@ footer{padding:16px 22px;color:var(--muted);font-size:11.5px;border-top:1px soli
   </div>
 </header>
 <nav>
-  <button class="on" data-tab="tE">1. EDS 웨이퍼 테스트</button>
-  <button data-tab="t3">2. Fail Address 판별기</button>
-  <button data-tab="t2">3. FA — SEM 결함 분석</button>
-  <button data-tab="tS">4. 공정 센서 수율 분석</button>
-  <button data-tab="t1">5. 웨이퍼 맵 패턴 (참고)</button>
-  <button data-tab="t4">6. 판정 피드백</button>
-  <button data-tab="t5">7. 한계와 근거</button>
+  <button class="on" data-tab="tS">1. 공정 센서 관리도 <span style="font-size:10.5px;opacity:.7">실데이터</span></button>
+  <button data-tab="tE">2. EDS 웨이퍼 테스트</button>
+  <button data-tab="t2">3. FA — SEM 결함 분석 <span style="font-size:10.5px;opacity:.7">실데이터</span></button>
+  <button data-tab="t1">4. 웨이퍼 맵 패턴 <span style="font-size:10.5px;opacity:.7">참고</span></button>
+  <button data-tab="t4">5. 판정 피드백</button>
+  <button data-tab="t5">6. 한계와 근거</button>
 </nav>
 <main>
 
@@ -142,7 +141,7 @@ footer{padding:16px 22px;color:var(--muted);font-size:11.5px;border-top:1px soli
 </section>
 
 <!-- ================= 탭 EDS ================= -->
-<section id="tE" class="tab on">
+<section id="tE" class="tab">
   <div class="warnbox"><b>웨이퍼 테스트는 전기 시험입니다.</b> 프로브 카드를 다이에 대고
     전압을 인가해 출력이 규격에 맞는지 봅니다. 고온 조건도 여기서 겁니다.
     <b>이 단계에서 결함 이미지는 보지 않습니다</b>(그건 FA 단계입니다).<br>
@@ -269,70 +268,8 @@ footer{padding:16px 22px;color:var(--muted);font-size:11.5px;border-top:1px soli
   </div>
 </section>
 
-<!-- ================= 탭 3 ================= -->
-<section id="t3" class="tab">
-  <div class="warnbox"><b>이 탭의 주소 데이터는 전부 합성입니다.</b>
-    셀 단위 Fail Address 비트맵은 공개 데이터가 존재하지 않습니다. WM-811K는 다이 단위 합불만 제공하며
-    칩 내부 셀 주소는 없습니다. 판별은 학습 모델이 아니라 <b>규칙 기반</b>이며,
-    임계값은 전부 <b>가정치</b>입니다 — 아래 슬라이더로 직접 바꿔 결과가 얼마나 흔들리는지 확인하십시오.
-    주소 표기는 <b>16진수</b>입니다.</div>
-  <div class="grid" style="grid-template-columns:300px minmax(300px,1fr) minmax(300px,420px)">
-    <div class="panel">
-      <h3>합성 조건</h3>
-      <label class="rng">불량 모드</label>
-      <select id="fmode">
-        <option value="single_bit">싱글비트</option>
-        <option value="row_fail" selected>로우성 (X 고정)</option>
-        <option value="column_fail">칼럼성 (Y 고정)</option>
-        <option value="block_fail">블락성</option>
-        <option value="cross_fail">크로스 (로우+칼럼)</option>
-      </select>
-      <div style="margin-top:12px">
-        <label class="rng">fail 개수 <b id="fnv">20</b></label>
-        <input type="range" id="fn" min="4" max="60" value="20" style="width:100%">
-        <label class="rng">산발 잡음 <b id="fnzv">2</b>건</label>
-        <input type="range" id="fnz" min="0" max="15" value="2" style="width:100%">
-        <label class="rng">주소 간격(stride) <b id="fstv">16</b></label>
-        <input type="range" id="fst" min="1" max="64" value="16" style="width:100%">
-      </div>
-      <button class="act" id="fgen" style="margin-top:12px;width:100%">다시 생성</button>
-      <h3 style="margin-top:18px">판별 임계값 <span style="font-weight:400;color:var(--warn);font-size:11.5px">전부 가정치</span></h3>
-      <label class="rng">line_min_count <b id="v1">4</b></label>
-      <input type="range" id="r1" min="2" max="12" value="4" style="width:100%">
-      <label class="rng">line_min_ratio <b id="v2">0.30</b></label>
-      <input type="range" id="r2" min="5" max="99" value="30" style="width:100%">
-      <label class="rng">block_min_count <b id="v3">6</b></label>
-      <input type="range" id="r3" min="2" max="20" value="6" style="width:100%">
-      <label class="rng">block_min_ratio <b id="v4">0.40</b></label>
-      <input type="range" id="r4" min="5" max="99" value="40" style="width:100%">
-    </div>
-    <div class="panel">
-      <h3>주소 분포</h3>
-      <canvas id="fplot" width="340" height="340"></canvas>
-      <div style="font-size:11.5px;color:var(--muted);margin-top:5px">
-        가로 = X (row address), 세로 = Y (column address). 전체 주소 공간을 정규화해 표시.</div>
-      <h3 style="margin-top:14px">Fail Address 목록</h3>
-      <div class="scroll" style="max-height:230px;overflow-y:auto">
-        <table class="mono"><thead><tr><th>X</th><th>Y</th></tr></thead><tbody id="ftbl"></tbody></table>
-      </div>
-    </div>
-    <div class="panel">
-      <h3>판별 결과와 근거</h3>
-      <div id="fres"></div>
-    </div>
-  </div>
-  <div class="panel" style="margin-top:16px">
-    <h3>불량 모드는 어떤 공정 문제에서 나오나</h3>
-    <p style="font-size:12px;color:var(--muted);margin-top:0">
-      아래 문헌은 서지(저자·저널·권·호·페이지·DOI)를 Crossref로 대조해 확인했습니다.
-      다만 본문을 직접 읽어 검증하지는 않았으므로 <b>제목에서 확실히 알 수 있는 범위</b>까지만
-      근거로 씁니다.</p>
-    <div id="fmodes" class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))"></div>
-  </div>
-</section>
-
 <!-- ================= 탭 SECOM ================= -->
-<section id="tS" class="tab">
+<section id="tS" class="tab on">
   <div class="notice">이 탭은 <b>합성이 하나도 없습니다.</b> 실제 fab 라인에서 89일간 기록된
     공정 센서값과 웨이퍼 합불 결과를 그대로 씁니다 (UCI SECOM).</div>
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(330px,1fr))">
@@ -1036,74 +973,8 @@ function classify(addrs, r) {
   };
 }
 
-function fRules() {
-  return {lc: +$('r1').value, lr: +$('r2').value / 100,
-          bc: +$('r3').value, br: +$('r4').value / 100};
-}
-
-function fRender() {
-  const r = fRules();
-  const res = classify(FADDR, r);
-  // 산점도
-  const c = $('fplot'), g = c.getContext('2d'), S = 340;
-  g.clearRect(0, 0, S, S);
-  g.strokeStyle = css('--border'); g.strokeRect(0.5, 0.5, S - 1, S - 1);
-  g.fillStyle = css('--die-fail');
-  FADDR.forEach(([x, y]) => {
-    const px = 4 + (x / XMAX) * (S - 8), py = 4 + (y / YMAX) * (S - 8);
-    g.beginPath(); g.arc(px, py, 2.6, 0, 6.283); g.fill();
-  });
-  // 표
-  $('ftbl').innerHTML = FADDR.map(([x, y]) =>
-    `<tr><td>${x.toString(16).padStart(4, '0')}</td><td>${y.toString(16).padStart(3, '0')}</td></tr>`).join('');
-
-  if (!res) { $('fres').innerHTML = 'fail 없음'; return; }
-  const e = res.ev;
-  const sc = Object.entries(e.scores).sort((a, b) => b[1] - a[1]);
-  $('fres').innerHTML = `
-    <div style="font-size:17px;font-weight:700;margin-bottom:4px">
-      ${MODE_LABEL[res.mode]} <span style="font-size:13px;color:var(--muted)">(${res.mode})</span></div>
-    <div style="font-size:12.5px;color:var(--muted);margin-bottom:8px;white-space:pre-line">${
-      ((D.fail_address.modes || {})[res.mode] || {}).plain?.trim() || ''}</div>
-    <div style="margin-bottom:10px">설명 비율 <b class="mono">${res.score.toFixed(3)}</b>
-      ${res.ambiguous ? `<span class="bad"> ← 경계 사례 (차상위 ${MODE_LABEL[res.runner[0]]} ${res.runner[1].toFixed(3)}, 차이 ${AMB} 미만)</span>` : ''}</div>
-    <h3>근거</h3>
-    <div class="kv mono" style="font-size:12px">
-      <b>fail 총수</b><span>${e.n}</span>
-      <b>최다 X</b><span>0x${e.tx.toString(16).padStart(4, '0')} : ${e.cx}건 (${(e.cx / e.n * 100).toFixed(1)}%) ${e.rowOk ? '<span class="ok">임계 통과</span>' : '<span style="color:var(--muted)">임계 미달</span>'}</span>
-      <b>최다 Y</b><span>0x${e.ty.toString(16).padStart(3, '0')} : ${e.cy}건 (${(e.cy / e.n * 100).toFixed(1)}%) ${e.colOk ? '<span class="ok">임계 통과</span>' : '<span style="color:var(--muted)">임계 미달</span>'}</span>
-      <b>최밀 블록</b><span>0x${e.bx.toString(16).padStart(4, '0')} / 0x${e.by.toString(16).padStart(3, '0')} : ${e.bestCnt}건 (${(e.bestCnt / e.n * 100).toFixed(1)}%) ${e.blkOk ? '<span class="ok">임계 통과</span>' : '<span style="color:var(--muted)">임계 미달</span>'}</span>
-    </div>
-    <h3 style="margin-top:12px">구조별 설명 비율</h3>
-    ${sc.map(([k, v]) => `<div style="margin-bottom:5px">
-      <div style="display:flex;justify-content:space-between;font-size:12.5px">
-        <span>${MODE_LABEL[k]}</span><span class="mono">${v.toFixed(3)}</span></div>
-      <div class="bar"><i style="width:${(v * 100).toFixed(1)}%"></i></div></div>`).join('')}
-    <p style="font-size:11.5px;color:var(--muted);margin-top:10px">
-      점수는 <b>그 구조가 설명하는 fail의 비율</b>이며 확률이 아닙니다.
-      싱글비트 점수는 어느 구조로도 설명되지 않은 fail의 비율(합집합 기준)입니다.
-      임계값을 바꾸면 판별이 바뀝니다 — 임계값이 가정치라는 뜻입니다.</p>`;
-}
-
-function fGen() {
-  FADDR = addNoise(synth($('fmode').value, +$('fn').value, +$('fst').value), +$('fnz').value);
-  fRender();
-}
-['fn', 'fnz', 'fst'].forEach(id => $(id).oninput = () => {
-  $({fn: 'fnv', fnz: 'fnzv', fst: 'fstv'}[id]).textContent = $(id).value;
-  fGen();
-});
-$('fmode').onchange = fGen;
-$('fgen').onclick = fGen;
-['r1', 'r2', 'r3', 'r4'].forEach((id, k) => $(id).oninput = () => {
-  const v = +$(id).value;
-  $('v' + (k + 1)).textContent = (k === 1 || k === 3) ? (v / 100).toFixed(2) : v;
-  fRender();
-});
-fGen();
-
 // 불량 모드가 어떤 공정 문제에서 나오는지 — config/fail_modes.yaml 그대로 표시한다
-{
+if ($('fmodes')) {
   const M = D.fail_address.modes || {};
   $('fmodes').innerHTML = Object.entries(M).map(([k, v]) => `
     <div class="cand">

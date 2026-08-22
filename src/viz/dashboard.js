@@ -551,74 +551,8 @@ function classify(addrs, r) {
   };
 }
 
-function fRules() {
-  return {lc: +$('r1').value, lr: +$('r2').value / 100,
-          bc: +$('r3').value, br: +$('r4').value / 100};
-}
-
-function fRender() {
-  const r = fRules();
-  const res = classify(FADDR, r);
-  // 산점도
-  const c = $('fplot'), g = c.getContext('2d'), S = 340;
-  g.clearRect(0, 0, S, S);
-  g.strokeStyle = css('--border'); g.strokeRect(0.5, 0.5, S - 1, S - 1);
-  g.fillStyle = css('--die-fail');
-  FADDR.forEach(([x, y]) => {
-    const px = 4 + (x / XMAX) * (S - 8), py = 4 + (y / YMAX) * (S - 8);
-    g.beginPath(); g.arc(px, py, 2.6, 0, 6.283); g.fill();
-  });
-  // 표
-  $('ftbl').innerHTML = FADDR.map(([x, y]) =>
-    `<tr><td>${x.toString(16).padStart(4, '0')}</td><td>${y.toString(16).padStart(3, '0')}</td></tr>`).join('');
-
-  if (!res) { $('fres').innerHTML = 'fail 없음'; return; }
-  const e = res.ev;
-  const sc = Object.entries(e.scores).sort((a, b) => b[1] - a[1]);
-  $('fres').innerHTML = `
-    <div style="font-size:17px;font-weight:700;margin-bottom:4px">
-      ${MODE_LABEL[res.mode]} <span style="font-size:13px;color:var(--muted)">(${res.mode})</span></div>
-    <div style="font-size:12.5px;color:var(--muted);margin-bottom:8px;white-space:pre-line">${
-      ((D.fail_address.modes || {})[res.mode] || {}).plain?.trim() || ''}</div>
-    <div style="margin-bottom:10px">설명 비율 <b class="mono">${res.score.toFixed(3)}</b>
-      ${res.ambiguous ? `<span class="bad"> ← 경계 사례 (차상위 ${MODE_LABEL[res.runner[0]]} ${res.runner[1].toFixed(3)}, 차이 ${AMB} 미만)</span>` : ''}</div>
-    <h3>근거</h3>
-    <div class="kv mono" style="font-size:12px">
-      <b>fail 총수</b><span>${e.n}</span>
-      <b>최다 X</b><span>0x${e.tx.toString(16).padStart(4, '0')} : ${e.cx}건 (${(e.cx / e.n * 100).toFixed(1)}%) ${e.rowOk ? '<span class="ok">임계 통과</span>' : '<span style="color:var(--muted)">임계 미달</span>'}</span>
-      <b>최다 Y</b><span>0x${e.ty.toString(16).padStart(3, '0')} : ${e.cy}건 (${(e.cy / e.n * 100).toFixed(1)}%) ${e.colOk ? '<span class="ok">임계 통과</span>' : '<span style="color:var(--muted)">임계 미달</span>'}</span>
-      <b>최밀 블록</b><span>0x${e.bx.toString(16).padStart(4, '0')} / 0x${e.by.toString(16).padStart(3, '0')} : ${e.bestCnt}건 (${(e.bestCnt / e.n * 100).toFixed(1)}%) ${e.blkOk ? '<span class="ok">임계 통과</span>' : '<span style="color:var(--muted)">임계 미달</span>'}</span>
-    </div>
-    <h3 style="margin-top:12px">구조별 설명 비율</h3>
-    ${sc.map(([k, v]) => `<div style="margin-bottom:5px">
-      <div style="display:flex;justify-content:space-between;font-size:12.5px">
-        <span>${MODE_LABEL[k]}</span><span class="mono">${v.toFixed(3)}</span></div>
-      <div class="bar"><i style="width:${(v * 100).toFixed(1)}%"></i></div></div>`).join('')}
-    <p style="font-size:11.5px;color:var(--muted);margin-top:10px">
-      점수는 <b>그 구조가 설명하는 fail의 비율</b>이며 확률이 아닙니다.
-      싱글비트 점수는 어느 구조로도 설명되지 않은 fail의 비율(합집합 기준)입니다.
-      임계값을 바꾸면 판별이 바뀝니다 — 임계값이 가정치라는 뜻입니다.</p>`;
-}
-
-function fGen() {
-  FADDR = addNoise(synth($('fmode').value, +$('fn').value, +$('fst').value), +$('fnz').value);
-  fRender();
-}
-['fn', 'fnz', 'fst'].forEach(id => $(id).oninput = () => {
-  $({fn: 'fnv', fnz: 'fnzv', fst: 'fstv'}[id]).textContent = $(id).value;
-  fGen();
-});
-$('fmode').onchange = fGen;
-$('fgen').onclick = fGen;
-['r1', 'r2', 'r3', 'r4'].forEach((id, k) => $(id).oninput = () => {
-  const v = +$(id).value;
-  $('v' + (k + 1)).textContent = (k === 1 || k === 3) ? (v / 100).toFixed(2) : v;
-  fRender();
-});
-fGen();
-
 // 불량 모드가 어떤 공정 문제에서 나오는지 — config/fail_modes.yaml 그대로 표시한다
-{
+if ($('fmodes')) {
   const M = D.fail_address.modes || {};
   $('fmodes').innerHTML = Object.entries(M).map(([k, v]) => `
     <div class="cand">
