@@ -124,10 +124,10 @@ def synth_measurements(dies: pd.DataFrame, meta_row, rng: np.random.Generator,
 
     # 규격: 핀 전압 [-1.20, -0.40] → 여유를 두고 [-1.05, -0.55]
     out["open_short_v"] = bounded(f_idd, 0.0, -1.05, -0.55)
-    # 규격: 대기 전류 ≤ 3.0 mA → [0.70, 2.40]. 가장자리로 갈수록 커진다.
-    out["idd_standby_ma"] = bounded(f_idd, 1.2, 0.70, 2.40)
-    # 규격: 동작 전류 ≤ 120 mA → [58, 106]
-    out["idd_active_ma"] = bounded(f_idd, 1.2, 58.0, 106.0)
+    # 규격: IDD2N ≤ 400 mA → 정상품은 [300, 385]. 가장자리로 갈수록 커진다.
+    out["idd_standby_ma"] = bounded(f_idd, 1.2, 300.0, 385.0)
+    # 규격: IDD4R ≤ 1280 mA → 정상품은 [980, 1240]
+    out["idd_active_ma"] = bounded(f_idd, 1.2, 980.0, 1240.0)
     # 규격: 리텐션 ≥ 64 ms → [72, 127]. 가장자리로 갈수록 짧아진다.
     out["retention_hot_ms"] = bounded(f_ret, -1.2, 72.0, 127.0)
     out["fail_bits_room"] = 0
@@ -182,10 +182,10 @@ def inject_defects(m: pd.DataFrame, spec: dict, pattern: str,
                                  rng.uniform(-0.35, -0.02, len(sel)))
         sel = dl[which == "idd_standby"]
         if len(sel):
-            v_ids[sel] = rng.uniform(3.1, 12.0, len(sel))
+            v_ids[sel] = rng.uniform(405.0, 900.0, len(sel))     # IDD2N 규격 400 mA 초과
         sel = dl[which == "idd_active"]
         if len(sel):
-            v_ida[sel] = rng.uniform(121.0, 190.0, len(sel))
+            v_ida[sel] = rng.uniform(1290.0, 2100.0, len(sel))   # IDD4R 규격 1280 mA 초과
 
     # --- 셀 어레이 불량 (리페어 대상) ---
     ca = idx[~die_level]

@@ -29,10 +29,11 @@ meta:
 temperatures:
   - id: room
     label: 상온
-    celsius: 25            # (가정치) 상온 시험 온도
+    celsius: 25            # (통상범위) 정상 동작 온도 범위 0~85°C 안의 상온 조건
   - id: hot
     label: 고온
-    celsius: 85            # (가정치) 고온 시험 온도. 통상 85°C 급이 쓰인다.
+    celsius: 85            # (표준·규정) DDR4 정상 동작 온도 범위 상한. 이를 넘으면
+                           # 확장 온도 범위(85~95°C)로 리프레시 주기를 절반으로 줄여야 한다.
     note: |
       온도가 오르면 접합 누설이 커져 셀이 전하를 유지하는 시간이 짧아진다.
       상온에서 통과하던 셀이 고온에서 떨어지는 일이 이 때문에 생긴다.
@@ -54,7 +55,9 @@ tests:
       배선이 끊겨 있으면 전압이 비정상으로 크고, 붙어 있으면 거의 0이 된다.
     measure: 핀 전압
     unit: V
-    spec: {min: -1.20, max: -0.40}     # (가정치) 보호 다이오드 강하 대역
+    spec: {min: -1.20, max: -0.40}     # (가정치) 보호 다이오드 강하 대역.
+                                       # 데이터시트에 오픈/쇼트 판정 전압 규격은 없다.
+                                       # 절대최대정격이 Vin -0.3~1.5 V인 점만 확인된다.
     fail_meaning:
       above_max: 배선이 붙음(쇼트) 또는 접촉 이상
       below_min: 배선이 끊김(오픈)
@@ -67,9 +70,10 @@ tests:
     plain: |
       규정 전압을 걸고 아무 동작도 시키지 않은 채 흐르는 전류를 잰다.
       어딘가 새는 곳이 있으면 이 값이 커진다.
-    measure: 대기 전류
+    measure: 대기 전류 (IDD2N)
     unit: mA
-    spec: {min: 0.0, max: 3.0}         # (가정치)
+    spec: {min: 0.0, max: 400.0}       # (표준·규정) IDD2N Precharge standby current,
+                                       # DDR4-2400 / 4Gb / single rank = 400 mA
     fail_meaning:
       above_max: 누설 경로 존재
     repairable_scope: die_level
@@ -81,9 +85,10 @@ tests:
     plain: |
       실제로 읽고 쓰는 동작을 시키면서 흐르는 전류를 잰다. 규격을 넘으면
       소비 전력 사양을 못 맞춘다.
-    measure: 동작 전류
+    measure: 동작 전류 (IDD4R)
     unit: mA
-    spec: {min: 0.0, max: 120.0}       # (가정치)
+    spec: {min: 0.0, max: 1280.0}      # (표준·규정) IDD4R Burst read current,
+                                       # DDR4-2400 / 4Gb / single rank = 1280 mA
     fail_meaning:
       above_max: 소비 전력 초과
     repairable_scope: die_level
@@ -125,13 +130,43 @@ tests:
       전하가 새어 값이 바뀌면 그 셀은 리텐션 불량이다. 고온일수록 빨리 샌다.
     measure: 보유 시간
     unit: ms
-    spec: {min: 64.0, max: null}       # (가정치) 리프레시 주기 64 ms 급을 기준으로 삼음
+    spec: {min: 64.0, max: null}       # (표준·규정) tREFI 7.8 µs × 8192 = 약 64 ms.
+                                       # 정상 온도 범위(0~85°C) 기준 리프레시 주기.
+                                       # 85°C를 넘으면 tREFI가 절반으로 줄어 32 ms가 된다.
     fail_meaning:
       below_min: 리프레시 주기 안에 값을 유지하지 못함
     repairable_scope: cell_array
     order: 6
     reference:
       - "A. Bouhdada, J. Oualid, 'MOS capacitor holding time and diffusion length at DRAM refresh test temperature', Microelectronics Journal, vol. 26, no. 5, pp. 405-412, 1995. doi:10.1016/0026-2692(95)98942-k"
+
+# ---------------------------------------------------------------------------
+# 규격값 출처
+# ---------------------------------------------------------------------------
+spec_source:
+  document: |
+    Viking Technology, "PS9FUxx64x8xxx DDR4 SDRAM Datasheet", Revision C, 2017-02-22.
+    (표에 "Values as per Micron Datasheet Revision A" 명기)
+    https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/2270/PS9FUxx64x8zzz.pdf
+  standard: |
+    JEDEC JESD79-4 DDR4 SDRAM Standard. https://www.jedec.org/standards-documents/docs/jesd79-4a
+  applies_to: DDR4-2400, 4 Gbit, single rank
+  values_taken:
+    IDD2N: "400 mA — Precharge standby current"
+    IDD3N: "536 mA — Active standby current"
+    IDD4R: "1280 mA — Burst read current"
+    IDD4W: "1568 mA — Burst write current"
+    IDD6N: "160 mA — Self refresh, 정상 온도 범위(0~85°C)"
+    IDD6E: "216 mA — Self refresh, 확장 온도 범위(0~95°C)"
+    VDD: "1.2 V ±5%"
+    T_oper: "정상 0~85°C / 확장 85~95°C"
+    tRFC1_min_4Gb: "260 ns"
+  caveat: |
+    **중요.** 위 규격은 DDR4-2400 4Gbit 제품의 공개 데이터시트 값이다.
+    본 프로젝트의 웨이퍼 데이터(WM-811K)는 제품 종류·세대가 공개되어 있지 않으므로,
+    이 규격이 그 웨이퍼의 실제 규격이라는 보장은 없다.
+    **임의로 지어낸 값 대신 실재하는 공개 규격을 참조값으로 쓴 것**이며,
+    측정값 자체는 여전히 합성이다.
 
 # ---------------------------------------------------------------------------
 # 리페어 자원과 판정

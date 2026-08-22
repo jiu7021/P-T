@@ -95,17 +95,17 @@ footer{padding:16px 22px;color:var(--muted);font-size:11.5px;border-top:1px soli
   </div>
 </header>
 <nav>
-  <button class="on" data-tab="t1">1. 웨이퍼 맵 분석</button>
-  <button data-tab="tE">2. EDS 웨이퍼 테스트</button>
-  <button data-tab="t3">3. Fail Address 분석</button>
-  <button data-tab="t2">4. FA — SEM 결함 분석</button>
+  <button class="on" data-tab="tE">1. EDS 웨이퍼 테스트</button>
+  <button data-tab="t3">2. Fail Address 판별기</button>
+  <button data-tab="t2">3. FA — SEM 결함 분석</button>
+  <button data-tab="t1">4. 웨이퍼 맵 패턴 (참고)</button>
   <button data-tab="t4">5. 판정 피드백</button>
   <button data-tab="t5">6. 한계와 근거</button>
 </nav>
 <main>
 
 <!-- ================= 탭 1 ================= -->
-<section id="t1" class="tab on">
+<section id="t1" class="tab">
   <div class="warnbox">웨이퍼 맵의 다이 합불과 공간 분포는 <b>WM-811K 실데이터</b>입니다.
     패턴 라벨 분류는 CNN 예측이며, 히트맵은 Grad-CAM으로 계산한 <b>판단 근거 영역</b>입니다.
     균형 샘플링 표본이므로 여기 표시되는 불량률은 실제 라인 수율이 아닙니다.</div>
@@ -148,7 +148,7 @@ footer{padding:16px 22px;color:var(--muted);font-size:11.5px;border-top:1px soli
 </section>
 
 <!-- ================= 탭 EDS ================= -->
-<section id="tE" class="tab">
+<section id="tE" class="tab on">
   <div class="warnbox"><b>웨이퍼 테스트는 전기 시험입니다.</b> 프로브 카드를 다이에 대고
     전압을 인가해 출력이 규격에 맞는지 봅니다. 고온 조건도 여기서 겁니다.
     <b>이 단계에서 결함 이미지는 보지 않습니다</b>(그건 FA 단계입니다).<br>
@@ -175,6 +175,28 @@ footer{padding:16px 22px;color:var(--muted);font-size:11.5px;border-top:1px soli
       <h3>측정값과 판정 근거</h3>
       <div id="einfo"><p style="font-size:12.5px;color:var(--muted)">
         왼쪽 웨이퍼 맵에서 다이를 클릭하십시오.</p></div>
+    </div>
+  </div>
+
+  <div class="panel" id="echip" style="margin-top:16px;display:none">
+    <h3>선택한 다이의 <span style="color:var(--accent)">칩 내부</span> Fail Address
+      <span id="echiptitle" style="font-weight:400;color:var(--muted);font-size:12.5px"></span></h3>
+    <p style="font-size:12px;color:var(--muted);margin-top:0">
+      웨이퍼 맵의 점 하나가 칩 한 개입니다. 여기는 <b>그 칩 안쪽</b>을 연 것입니다.
+      가로 = X(행 주소), 세로 = Y(열 주소). 한 세로줄에 몰리면 칼럼성, 한 가로줄이면 로우성,
+      한 구역에 뭉치면 블락성입니다.</p>
+    <div class="flex">
+      <div>
+        <canvas id="echipmap" width="300" height="300"></canvas>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:4px">주소 공간 전체를 정규화해 표시</div>
+      </div>
+      <div style="min-width:230px">
+        <h3 style="margin-top:0">Fail Address 목록</h3>
+        <div class="scroll" style="max-height:250px;overflow-y:auto">
+          <table class="mono"><thead><tr><th>X</th><th>Y</th></tr></thead><tbody id="echiptbl"></tbody></table>
+        </div>
+      </div>
+      <div style="flex:1;min-width:250px" id="echipnote"></div>
     </div>
   </div>
 

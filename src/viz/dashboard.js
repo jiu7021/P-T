@@ -283,7 +283,62 @@ $('emap').onclick = (ev) => {
     <p style="font-size:11.5px;color:var(--muted);margin-top:10px">
       측정값과 fail bit 주소는 합성입니다. 이 다이가 불량인지 아닌지는 실데이터가 정했고,
       합성은 <b>왜 불량인지</b>만 만듭니다.</p>`;
+
+  drawChip(mode, w.nbits[k], gi, w.ur[k], w.uc[k], mx, my, isCell);
 };
+
+// 선택한 다이의 칩 내부 Fail Address를 그린다.
+// 웨이퍼 맵의 점 하나 = 칩 한 개, 여기는 그 칩 안쪽이다. 두 계층을 잇는 화면이다.
+function drawChip(mode, nbits, gi, ur, uc, dx, dy, isCell) {
+  const box = $('echip');
+  if (!isCell || !nbits) {
+    box.style.display = 'none';
+    return;
+  }
+  box.style.display = '';
+  $('echiptitle').textContent = `— 웨이퍼 좌표 (${dx}, ${dy})`;
+
+  const addrs = synth(mode, nbits, 16);
+  const S = 300, c = $('echipmap'), g = c.getContext('2d');
+  g.clearRect(0, 0, S, S);
+  g.strokeStyle = css('--border');
+  g.strokeRect(0.5, 0.5, S - 1, S - 1);
+  // 눈금: 주소 공간을 8등분해 옅은 격자를 깐다. 줄인지 덩어리인지 눈으로 잡기 쉽다.
+  g.strokeStyle = css('--die-out');
+  for (let i = 1; i < 8; i++) {
+    g.beginPath(); g.moveTo(i * S / 8, 0); g.lineTo(i * S / 8, S); g.stroke();
+    g.beginPath(); g.moveTo(0, i * S / 8); g.lineTo(S, i * S / 8); g.stroke();
+  }
+  g.fillStyle = gi === 1 ? '#e8a317' : '#d93630';
+  addrs.forEach(([x, y]) => {
+    g.beginPath();
+    g.arc(4 + (x / XMAX) * (S - 8), 4 + (y / YMAX) * (S - 8), 2.4, 0, 6.283);
+    g.fill();
+  });
+
+  $('echiptbl').innerHTML = addrs.slice(0, 40).map(([x, y]) =>
+    `<tr><td>${x.toString(16).padStart(4, '0')}</td><td>${y.toString(16).padStart(3, '0')}</td></tr>`).join('')
+    + (addrs.length > 40 ? `<tr><td colspan="2" style="color:var(--muted)">… 외 ${addrs.length - 40}건</td></tr>` : '');
+
+  const res = classify(addrs, {lc: 4, lr: 0.30, bc: 6, br: 0.40});
+  const md = (D.fail_address.modes || {})[mode] || {};
+  $('echipnote').innerHTML = `
+    <div class="kv" style="margin-bottom:9px">
+      <b>fail bit</b><span>${addrs.length}개</span>
+      <b>주소 분포가 말하는 것</b><span><b>${MODE_LABEL[res.mode] || res.mode}</b>
+        (설명 비율 ${res.score.toFixed(2)})</span>
+      <b>리페어 결과</b><span class="${gi === 1 ? 'ok' : 'bad'}">
+        여분 행 ${ur}/${E.repair.spare_rows}, 열 ${uc}/${E.repair.spare_cols} 사용 →
+        ${gi === 1 ? 'Repairable' : 'Fail'}</span>
+    </div>
+    <div style="font-size:12.5px;white-space:pre-line">${(md.plain || '').trim()}</div>
+    <div style="font-size:12.5px;margin-top:7px"><b style="color:var(--muted)">관련 공정</b><br>${
+      (md.process_link || '').trim()}</div>
+    <p style="font-size:11.5px;color:var(--muted);margin-top:8px">
+      이 주소들은 판정에 쓰인 것과 <b>같은 모드·같은 개수로 다시 만든 분포</b>입니다.
+      주소 자체가 합성이므로 성질은 같지만 개별 값은 판정 시점과 다릅니다.
+      리페어 결과는 판정 시점의 실제 계산 값입니다.</p>`;
+}
 
 // ================= 탭 2: SEM =================
 const SEM = D.sem.items, CAUSE = D.sem.cause_map;
@@ -584,6 +639,8 @@ fGen();
     ['L6 클래스 이름 비공개', '결함 클래스는 1~6 숫자뿐입니다. 숫자에 결함 용어를 붙이지 않고 측정된 형태를 씁니다.'],
     ['L7 극단 불균형', 'class 5는 4장, class 2는 8장뿐입니다(1002:1). 이 클래스들의 F1은 잡음입니다.'],
     ['L9 마스크 예외', '설명서는 binary 마스크라고 하지만 395장(8.6%)이 비이진(경계 안티앨리어싱), 4장이 RGBA/RGB입니다. 읽기를 한 함수로 표준화했습니다.'],
+    ['L10 단면 이미지 없음', '실제 현장은 불량 다이를 잘라 <b>단면 SEM/TEM</b>으로 내부 구조를 봅니다. 공개 데이터를 전수 조사했으나 쓸 수 있는 것이 없어 <b>이 분석은 시도하지 못했습니다</b>. MIIC(25,276장)와 SEM Nanoscience(22,000장)는 평면 이미지이고, 단면인 DEVICE-TEM은 15장뿐입니다. 단면 이미지는 소자 구조와 공정 조건이 그대로 드러나 각 사의 핵심 자산이라 공개되지 않습니다. 그래서 결함이 어느 층·어느 구조에서 났는지 확인하는 분석까지는 가지 못했습니다.'],
+    ['규격값의 출처', 'EDS 시험 규격은 임의값이 아니라 <b>DDR4-2400 4Gb 공개 데이터시트</b>의 실제 값입니다(IDD2N 400 mA, IDD4R 1280 mA, 동작온도 0~85°C, tREFI 기준 리프레시 주기 64 ms). 다만 WM-811K 웨이퍼의 제품 종류가 공개되지 않아, 이 규격이 그 웨이퍼의 실제 규격이라는 보장은 없습니다. 측정값 자체는 여전히 합성입니다.'],
   ];
   $('limits').innerHTML = L.map(([k, v]) =>
     `<div style="margin-bottom:9px"><b style="font-size:12.5px">${k}</b>
