@@ -267,6 +267,9 @@ def main() -> int:
     eds = collect_eds()
     print(f"  웨이퍼 {len(eds['wafers'])}장")
 
+    print("SECOM 결과 로드…")
+    secom = json.loads((PROCESSED / "secom_eval.json").read_text(encoding="utf-8"))
+
     print("평가 지표 로드…")
     pat_eval = json.loads((PROCESSED / "pattern_eval.json").read_text(encoding="utf-8"))
     def_eval = json.loads((PROCESSED / "defect_eval.json").read_text(encoding="utf-8"))
@@ -283,12 +286,14 @@ def main() -> int:
                 "wafer_map": "WM-811K 실데이터",
                 "sem": "Carinthia-S 실데이터",
                 "eds_measurement": "합성 (측정값·fail address). 불량 위치는 실데이터",
+                "secom": "UCI SECOM 실데이터 (합성 없음)",
                 "fail_address": "합성 (공개 데이터 없음)",
                 "cause_process": "문헌 기반 룩업 (모델 아님)",
             },
         },
         "wafers": wafers,
         "eds": eds,
+        "secom": secom,
         "sem": sem,
         "pattern_eval": pat_eval,
         "defect_eval": def_eval,

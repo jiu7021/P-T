@@ -630,6 +630,110 @@ fGen();
     </div>`).join('');
 }
 
+// ================= 탭 SECOM: 공정 센서 수율 분석 =================
+{
+  const S = D.secom;
+  const ts = S.time_split, rs = S.random_split;
+  const pct = (v) => (v * 100).toFixed(2) + '%';
+
+  $('sc_meta').innerHTML = `
+    <div class="kv">
+      <b>출처</b><span>UCI Machine Learning Repository, SECOM (dataset 179)</span>
+      <b>규모</b><span>웨이퍼 ${S.n_wafer.toLocaleString()}장 × 공정 센서 ${S.n_sensor}개 (전처리 후)</span>
+      <b>기간</b><span>${S.period[0].slice(0, 10)} ~ ${S.period[1].slice(0, 10)} (89일)</span>
+      <b>fail</b><span>${pct(S.fail_rate)} — 불균형 1 : ${((1 - S.fail_rate) / S.fail_rate).toFixed(1)}</span>
+      <b>합성 비율</b><span class="ok">0% — 전부 실측값</span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:0">
+      fail이 6.6%뿐이라 accuracy는 의미가 없습니다(전부 pass로 찍어도 93.4%).
+      주 지표는 <b>PR-AUC</b>이며, 기저율(무작위로 찍었을 때 값)과 나란히 봅니다.</p>`;
+
+  const mo = Object.entries(S.monthly).filter(([, v]) => v.n > 0);
+  const maxR = Math.max(...mo.map(([, v]) => v.fail / v.n));
+  $('sc_month').innerHTML = mo.map(([k, v]) => {
+    const r = v.fail / v.n;
+    return `<div style="margin-bottom:7px">
+      <div style="display:flex;justify-content:space-between;font-size:12.5px">
+        <span>${k.slice(0, 7)} <span style="color:var(--muted)">웨이퍼 ${v.n}장</span></span>
+        <span class="mono">${pct(r)}</span></div>
+      <div class="bar"><i style="width:${(r / maxR * 100).toFixed(1)}%;background:var(--bad)"></i></div></div>`;
+  }).join('');
+
+  const row = (tag, split, model, hi) => {
+    const m = split.models[model];
+    return `<tr${hi ? ' style="background:var(--chip-syn-bg)"' : ''}>
+      <td>${tag}</td><td>${model === 'logistic' ? '로지스틱' : 'LightGBM'}</td>
+      <td class="mono">${m.pr_auc.toFixed(4)}</td>
+      <td class="mono" style="color:var(--muted)">${m.pr_auc_baseline.toFixed(4)}</td>
+      <td class="mono"><b>${m.lift.toFixed(2)}배</b></td>
+      <td class="mono">${m.roc_auc.toFixed(3)}</td></tr>`;
+  };
+  const d = rs.models.lightgbm.pr_auc / ts.models.lightgbm.pr_auc;
+  $('sc_split').innerHTML = `<table>
+      <tr><th>분할</th><th>모델</th><th>PR-AUC</th><th>기저율</th><th>기저 대비</th><th>ROC-AUC</th></tr>
+      ${row('시간 순 (실제 조건)', ts, 'logistic')}
+      ${row('시간 순 (실제 조건)', ts, 'lightgbm')}
+      ${row('무작위', rs, 'logistic')}
+      ${row('무작위', rs, 'lightgbm', true)}
+    </table>
+    <p style="font-size:13px;margin-top:10px"><b class="bad">무작위 분할이 PR-AUC를
+      ${d.toFixed(1)}배 부풀립니다</b> (${ts.models.lightgbm.pr_auc.toFixed(4)} →
+      ${rs.models.lightgbm.pr_auc.toFixed(4)}). ROC-AUC도
+      ${ts.models.lightgbm.roc_auc.toFixed(3)} → ${rs.models.lightgbm.roc_auc.toFixed(3)}으로 뜁니다.
+      같은 데이터, 같은 모델, 분할 방식만 다릅니다.</p>
+    <p style="font-size:12px;color:var(--muted)">결측 대치값과 표준화 통계도 <b>학습 구간에서만</b>
+      계산합니다. 검증 구간 값을 쓰면 미래 정보가 샙니다.
+      학습 ${ts.n_train}장(fail ${ts.fail_train}) / 검증 ${ts.n_test}장(fail ${ts.fail_test}).</p>`;
+
+  const tk = ts.models.lightgbm.topk;
+  $('sc_topk').innerHTML = `<table>
+      <tr><th>재검사 비율</th><th>장수</th><th>fail 검출률</th><th>정밀도</th></tr>
+      ${Object.entries(tk).map(([k, v]) => `<tr><td>상위 ${k.replace('top', '')}</td>
+        <td>${v.n_reviewed}</td><td class="${v.recall > 0.3 ? '' : 'bad'}">${pct(v.recall)}</td>
+        <td>${pct(v.precision)}</td></tr>`).join('')}
+    </table>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:0">무작위로 골랐다면 검출률은
+      재검사 비율과 같습니다(5% / 10% / 20%). <b>상위 20%를 봐도 23%밖에 못 잡습니다.</b></p>`;
+
+  const tr = S.improvement_trials || {};
+  const best = Math.max(...Object.values(tr).map(v => v.pr_auc));
+  $('sc_trials').innerHTML = `<table>
+      <tr><th>시도</th><th>PR-AUC</th><th>기저 대비</th></tr>
+      <tr><td>기본 LightGBM</td><td class="mono">${ts.models.lightgbm.pr_auc.toFixed(4)}</td>
+        <td class="mono">${ts.models.lightgbm.lift.toFixed(2)}배</td></tr>
+      ${Object.entries(tr).map(([k, v]) => `<tr><td>${k}</td>
+        <td class="mono">${v.pr_auc.toFixed(4)}</td><td class="mono">${v.lift.toFixed(2)}배</td></tr>`).join('')}
+    </table>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:0">최고 ${best.toFixed(4)}.
+      <b>"튜닝을 안 해봐서 낮은 것"이 아니라 "해봐도 오르지 않는 것"</b>임을 기록합니다.</p>`;
+
+  $('sc_sensors').innerHTML = `<table>
+      <tr><th>센서</th><th>pass 평균</th><th>fail 평균</th><th>차이</th></tr>
+      ${S.top_sensors.slice(0, 6).map(s => {
+        const rel = s.pass_mean ? (s.fail_mean - s.pass_mean) / Math.abs(s.pass_mean) * 100 : NaN;
+        return `<tr><td class="mono">${s.sensor}</td><td class="mono">${s.pass_mean.toFixed(3)}</td>
+          <td class="mono">${s.fail_mean.toFixed(3)}</td>
+          <td class="mono">${isFinite(rel) ? (rel > 0 ? '+' : '') + rel.toFixed(1) + '%' : '-'}</td></tr>`;
+      }).join('')}
+    </table>
+    <p style="font-size:12px;color:var(--warn);margin-bottom:0">센서 이름은 원본에서 익명화되어
+      번호로만 식별됩니다. <b>어느 장비의 무슨 물리량인지 알 수 없어 공정 개선 조치로
+      연결할 수 없습니다.</b> 이것도 공개 데이터의 한계입니다.</p>`;
+
+  $('sc_concl').innerHTML = `
+    <ol style="font-size:13px;padding-left:20px;margin:0">
+      <li><b>시간 순 분할 조건에서 이 데이터만으로는 웨이퍼 합불 예측이 사실상 되지 않습니다.</b>
+        ROC-AUC ${ts.models.lightgbm.roc_auc.toFixed(3)}~${ts.models.logistic.roc_auc.toFixed(3)},
+        상위 5% 재검사 검출률 0%.</li>
+      <li><b>무작위 분할은 PR-AUC를 ${d.toFixed(1)}배 부풀립니다.</b> SECOM으로 보고되는 좋은
+        성능 수치는 분할 방식을 확인하고 읽어야 합니다.</li>
+      <li>특징 선택·정규화·최근 데이터 학습 등 7가지 시도로도 개선되지 않았습니다.</li>
+    </ol>
+    <p style="font-size:13px;margin-bottom:0">이 모듈의 값어치는 예측 성능이 아니라
+      <b>평가 방식이 결론을 바꾼다는 것을 같은 데이터로 보인 것</b>입니다.
+      실제 라인에 올릴 모델이라면 시간 순 검증을 통과해야 합니다.</p>`;
+}
+
 // ================= 탭 5: 한계 · 성능 =================
 {
   const L = [
