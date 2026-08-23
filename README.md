@@ -1,6 +1,6 @@
 # P&T 불량 분석 · 테스트 정책 워크벤치
 
-**배포**: https://claude.ai/code/artifact/414181e3-4e9b-4f4a-baa9-023a453b0347
+**시뮬레이터**: https://jiu7021.github.io/P-T/
 **조작·용어 설명**: [docs/dashboard_guide.md](docs/dashboard_guide.md)
 
 반도체 후공정(P&T, Package & Test)의 불량 분석과 테스트 정책 결정을 지원하는 웹 워크벤치.

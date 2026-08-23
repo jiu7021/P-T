@@ -16,6 +16,9 @@ ROOT = Path(__file__).resolve().parents[2]
 VIZ = ROOT / "src" / "viz"
 DATA = ROOT / "data" / "processed" / "dashboard_data.json"
 OUT = ROOT / "output" / "dashboard.html"
+# GitHub Pages는 저장소 루트(또는 /docs)의 index.html을 서빙한다.
+# 같은 파일을 루트에도 둬서 https://<user>.github.io/<repo>/ 로 바로 열리게 한다.
+PAGES = ROOT / "index.html"
 
 
 def main() -> int:
@@ -34,8 +37,10 @@ def main() -> int:
     html = html.replace("__DATA__", data).replace("__SCRIPT__", js)
     OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(html, encoding="utf-8")
+    PAGES.write_text(html, encoding="utf-8")
     print(f"저장: {OUT.relative_to(ROOT)}  {OUT.stat().st_size:,} B "
           f"({OUT.stat().st_size/1e6:.2f} MB)")
+    print(f"저장: {PAGES.name}  (GitHub Pages용 사본)")
     print("외부 CDN·API 없음, 브라우저 저장소 미사용, 다크모드 대응")
     return 0
 

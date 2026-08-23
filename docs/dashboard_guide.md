@@ -1,6 +1,6 @@
 # 대시보드 조작 설명 · 용어 사전
 
-배포 주소: https://claude.ai/code/artifact/414181e3-4e9b-4f4a-baa9-023a453b0347
+배포 주소: https://jiu7021.github.io/P-T/
 
 ---
 

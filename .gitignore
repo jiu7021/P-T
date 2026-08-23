@@ -13,3 +13,6 @@ venv/
 
 # OS
 .DS_Store
+
+# Artifact 발행용 사본 (GitHub Pages는 루트 index.html을 쓴다)
+output/artifact_dashboard.html
