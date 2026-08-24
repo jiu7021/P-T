@@ -154,6 +154,10 @@ footer{padding:16px 22px;color:var(--muted);font-size:11.5px;border-top:1px soli
     <b>이 단계에서 결함 이미지는 보지 않습니다</b>(그건 FA 단계입니다).<br>
     어느 좌표의 다이가 불량인지는 <b>WM-811K 실데이터</b>이고,
     그 다이가 <b>어느 시험에서 어떤 값으로 걸렸는지와 fail bit 주소는 합성</b>입니다.</div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-bottom:16px">
+    <div class="panel"><h3>전체 판정 결과</h3><div id="e_total"></div></div>
+    <div class="panel"><h3>이 판정을 믿을 수 있나 — 검증이 잡아낸 오류</h3><div id="e_verify"></div></div>
+  </div>
   <div class="grid" style="grid-template-columns:230px minmax(330px,1fr) minmax(330px,470px)">
     <div class="panel">
       <h3>웨이퍼 선택</h3>
@@ -324,6 +328,16 @@ footer{padding:16px 22px;color:var(--muted);font-size:11.5px;border-top:1px soli
     <div class="panel"><h3>이상의 성격 — 대응이 다르다</h3><div id="dr_kind"></div></div>
     <div class="panel"><h3 style="color:var(--accent)">이상 구간과 불량의 관계 — 핵심</h3>
       <div id="dr_exc"></div></div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(330px,1fr));margin-top:16px">
+    <div class="panel"><h3>센서별 위험도 — 다중비교 보정을 먼저 한다</h3><div id="rk_risk"></div></div>
+    <div class="panel"><h3>센서 열화 의심 — 이탈이 점점 잦아지는가</h3><div id="rk_deg"></div></div>
+  </div>
+
+  <div class="panel" style="margin-top:16px">
+    <h3 style="color:var(--bad)">시간 순 검증 — 여기서 위 결과가 무너진다</h3>
+    <div id="rk_holdout"></div>
   </div>
 
   <div class="panel" style="margin-top:16px">

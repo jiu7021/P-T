@@ -270,6 +270,7 @@ def main() -> int:
     print("SECOM 결과 로드…")
     secom = json.loads((PROCESSED / "secom_eval.json").read_text(encoding="utf-8"))
     secom["drift"] = json.loads((PROCESSED / "secom_drift.json").read_text(encoding="utf-8"))
+    secom["risk"] = json.loads((PROCESSED / "secom_sensor_risk.json").read_text(encoding="utf-8"))
 
     print("평가 지표 로드…")
     pat_eval = json.loads((PROCESSED / "pattern_eval.json").read_text(encoding="utf-8"))

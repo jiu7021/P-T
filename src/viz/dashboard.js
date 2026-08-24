@@ -197,6 +197,42 @@ let eCur = 0, eGeom = null;
          Object.entries(S.mode_mix).map(([k, v]) => [k, v, k === '기준']));
 
   drawEds(0);
+
+  // ---- 전체 판정 결과 ----
+  const gc = E.summary.grade_counts, tot = E.summary.n_die;
+  const failReal = gc.repairable + gc.fail;          // 실데이터가 불량이라 정한 다이
+  $('e_total').innerHTML = `
+    <div style="font-size:13px;margin-bottom:9px">웨이퍼 2,000장 · 다이
+      <b>${tot.toLocaleString()}</b>개 전수 판정</div>
+    ${[['good', 'Good'], ['repairable', 'Repairable'], ['fail', 'Fail']].map(([k, nm], i) => `
+      <div style="margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;font-size:12.5px">
+          <span>${nm}</span><span class="mono">${gc[k].toLocaleString()} (${(gc[k] / tot * 100).toFixed(2)}%)</span></div>
+        <div class="bar"><i style="width:${(gc[k] / tot * 100).toFixed(1)}%;background:${G_COL[i]}"></i></div></div>`).join('')}
+    <p style="font-size:13px;margin:10px 0 0">실데이터상 불량 다이 <b>${failReal.toLocaleString()}</b>개 중
+      <b class="ok">${(gc.repairable / failReal * 100).toFixed(1)}%</b>를 여분 행·열로 살릴 수 있음을 확인했습니다.</p>
+    <p style="font-size:11.5px;color:var(--muted);margin-bottom:0">
+      어느 다이가 불량인지는 WM-811K 실데이터가 정합니다. 측정값과 fail 주소는 합성이며,
+      합성은 '왜 불량인지'만 만듭니다.</p>`;
+
+  // ---- 검증이 잡아낸 오류 ----
+  $('e_verify').innerHTML = `
+    <p style="font-size:12.5px;margin-top:0">코드에 검증 조건을 심어, 조건을 어기면
+      <b>결과를 저장하지 않고 중단</b>하도록 만들었습니다.</p>
+    <div class="cand" style="border-color:var(--bad)">
+      <div class="proc" style="color:var(--bad)">검출된 오류 — 정상 다이 275,159개가 불량으로 뒤집힘</div>
+      <div class="rat">"합성 데이터가 실데이터의 정상·불량 판정을 뒤집으면 저장하지 말고 중단하라"는
+        조건이 초기 구현에서 걸렸습니다. 리텐션 값을 <span class="mono">105 + 22·f − 25·r + 잡음</span>
+        같은 선형식으로 만들자 꼬리가 규격(64 ms) 아래로 내려가, 실데이터가 정상이라 한 다이가
+        불량으로 판정됐습니다. 로지스틱으로 유계화해 규격 안에 가두되 공간 상관은 유지하도록 고쳤습니다.</div>
+      <div class="note">수정 후 정상 다이 65,223개 표본에서 규격 위반 0을 확인했습니다.</div>
+    </div>
+    <table>
+      <tr><th>검증 항목</th><th>결과</th></tr>
+      <tr><td style="text-align:left">실데이터 정상 → Good</td><td class="ok">1,638,172개 · 불일치 0</td></tr>
+      <tr><td style="text-align:left">실데이터 불량 → Repairable/Fail</td><td class="ok">490,546개 · 불일치 0</td></tr>
+      <tr><td style="text-align:left">이웃 다이 특징의 미래 정보 누수</td><td class="ok">1.2만 건 대조 · 불일치 0</td></tr>
+    </table>`;
 }
 
 function MODE_LABEL_E(k) {
@@ -712,6 +748,68 @@ if ($('fmodes')) {
     <p style="font-size:12.5px;margin-bottom:0">이 데이터에서 쓸 수 있는 규칙은
       "센서 A가 높으면 불량"이 아니라 <b>"공정이 평소와 다른 상태인 웨이퍼를 우선 검사하라"</b>입니다.
       실데이터에서 합성 없이, 유의수준 1%에서 나온 결과입니다.</p>`;
+
+  // ---- 센서별 위험도 (FDR 보정) ----
+  const RK = S.risk;
+  $('rk_risk').innerHTML = `
+    <p style="font-size:12.5px;margin-top:0">센서 ${RK.n_tested}개를 각각 검정하면, 실제로 아무 관계가
+      없어도 유의수준 5%에서 <b>약 ${Math.round(RK.n_expected_by_chance)}개가 '유의하다'고 나옵니다.</b>
+      Benjamini-Hochberg 절차로 거짓발견율(FDR ${(RK.fdr_q * 100).toFixed(0)}%)을 통제한 뒤 남는 것만 봅니다.</p>
+    <table style="margin-bottom:10px">
+      <tr><td style="text-align:left">검정 가능한 센서</td><td>${RK.n_tested}개</td></tr>
+      <tr><td style="text-align:left">보정 전 p &lt; 0.05</td><td>${RK.n_raw_significant}개</td></tr>
+      <tr><td style="text-align:left">우연히 나올 기대치</td><td class="bad">약 ${Math.round(RK.n_expected_by_chance)}개</td></tr>
+      <tr><td style="text-align:left"><b>FDR 보정 통과</b></td><td class="ok"><b>${RK.n_fdr_significant}개</b></td></tr>
+    </table>
+    <table><tr><th>센서</th><th>이탈 시 fail</th><th>평소</th><th>위험비</th></tr>
+      ${RK.risk.slice(0, 6).map(r => `<tr><td class="mono">${r.sensor}</td>
+        <td>${(r.fail_when_out * 100).toFixed(1)}%</td><td>${(r.fail_when_in * 100).toFixed(1)}%</td>
+        <td class="mono ${r.risk_ratio > 1 ? 'bad' : ''}">${r.risk_ratio.toFixed(2)}</td></tr>`).join('')}
+    </table>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:0">위험비가 1보다 작은 센서가 섞여 있습니다.
+      <b>센서가 튀는 것과 불량이 나는 것은 같은 말이 아닙니다.</b></p>`;
+
+  const DG = RK.degradation;
+  $('rk_deg').innerHTML = `
+    <p style="font-size:12.5px;margin-top:0">이탈 빈도가 시간에 따라 <b>증가</b>하는 센서를 찾습니다.
+      검정 ${DG.n_tested}개 중 FDR 통과하며 증가 추세인 센서는 <b>${DG.n_increasing}개</b>입니다.</p>
+    <table><tr><th>센서</th><th>전반 이탈률</th><th>후반 이탈률</th><th>추세</th></tr>
+      ${DG.top.slice(0, 6).map(r => `<tr><td class="mono">${r.sensor}</td>
+        <td>${(r.first_half * 100).toFixed(2)}%</td>
+        <td class="bad">${(r.last_half * 100).toFixed(2)}%</td>
+        <td class="mono">${r.rho.toFixed(2)}</td></tr>`).join('')}
+    </table>
+    <p style="font-size:12px;color:var(--warn);margin-bottom:0">이탈이 잦아지는 것은 공정 변화일 수도,
+      <b>센서 자체의 열화</b>일 수도 있습니다. 이 데이터에는 센서 교체·정비 이력이 없어
+      둘을 구분할 수 없습니다.</p>`;
+
+  // ---- 시간 순 검증 ----
+  const HO = RK.holdout, hw = HO['가중 점수'];
+  $('rk_holdout').innerHTML = `
+    <p style="font-size:12.5px;margin-top:0">가중치를 정한 데이터로 평가하면 과적합입니다.
+      앞 ${HO.n_learn.toLocaleString()}장에서만 위험비를 학습하고 뒤 ${HO.n_eval.toLocaleString()}장에서 평가했습니다.</p>
+    <table>
+      <tr><th>항목</th><th>전체 데이터 기준</th><th>시간 순 분리</th></tr>
+      <tr><td style="text-align:left">위험을 높이는 센서(FDR 통과)</td><td>${RK.n_fdr_significant}개</td>
+        <td class="bad"><b>${HO.n_sig_learned}개</b></td></tr>
+      <tr><td style="text-align:left">상위 5% 웨이퍼 fail률</td><td>17.02%</td>
+        <td>${hw ? (hw.rate_flagged * 100).toFixed(2) + '%' : '-'}</td></tr>
+      <tr><td style="text-align:left">나머지 fail률</td><td>6.32%</td>
+        <td>${hw ? (hw.rate_rest * 100).toFixed(2) + '%' : '-'}</td></tr>
+      <tr><td style="text-align:left">배수</td><td>2.70x</td><td>${hw ? hw.ratio.toFixed(2) + 'x' : '-'}</td></tr>
+      <tr style="background:var(--chip-syn-bg)"><td style="text-align:left"><b>p 값</b></td>
+        <td class="mono"><b>0.0103</b></td>
+        <td class="mono bad"><b>${hw ? hw.p.toFixed(4) : '-'}</b></td></tr>
+    </table>
+    <p style="font-size:13px;margin-top:10px"><b>학습 구간에서 위험을 높이는 센서가 하나도 남지 않고,
+      유의성도 사라집니다(p 0.0103 → ${hw ? hw.p.toFixed(4) : '-'}).</b>
+      효과 크기(배수 2.3~2.7x)는 비슷하지만, 평가 구간이 ${HO.n_eval}장·그중 fail 26장뿐이라
+      검정력이 부족합니다. p = ${hw ? hw.p.toFixed(4) : '-'}은 "효과가 없다"가 아니라
+      <b>"이 표본으로는 확인할 수 없다"</b>에 가깝습니다.</p>
+    <p style="font-size:12.5px;color:var(--muted);margin-bottom:0">
+      이 절을 지우지 않고 남기는 이유: 분석 과정에서 그럴듯한 결과가 나왔다가 엄격한 검증에서
+      무너지는 일은 실제로 자주 일어납니다. <b>무너진 사실을 기록하는 것이 결과를 부풀리는 것보다
+      중요합니다.</b></p>`;
 
   $('sc_concl').innerHTML = `
     <ol style="font-size:13px;padding-left:20px;margin:0">
