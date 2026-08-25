@@ -187,12 +187,17 @@ footer{padding:16px 22px;color:var(--muted);font-size:11.5px;border-top:1px soli
       <span id="echiptitle" style="font-weight:400;color:var(--muted);font-size:12.5px"></span></h3>
     <p style="font-size:12px;color:var(--muted);margin-top:0">
       웨이퍼 맵의 점 하나가 칩 한 개입니다. 여기는 <b>그 칩 안쪽</b>을 연 것입니다.
-      가로 = X(행 주소), 세로 = Y(열 주소). 한 세로줄에 몰리면 칼럼성, 한 가로줄이면 로우성,
-      한 구역에 뭉치면 블락성입니다.</p>
+      가로 = X(행 주소), 세로 = Y(열 주소). 한 세로줄에 몰리면 로우성(X 고정),
+      한 가로줄이면 칼럼성(Y 고정), 한 구역에 뭉치면 블락성입니다.
+      초록 밴드가 <b>여분 워드라인·비트라인을 배정한 자리</b>이고, 빨간 점이 남으면 Fail입니다.</p>
     <div class="flex">
       <div>
-        <canvas id="echipmap" width="300" height="300"></canvas>
-        <div style="font-size:11.5px;color:var(--muted);margin-top:4px">주소 공간 전체를 정규화해 표시</div>
+        <canvas id="echipmap" width="420" height="420" style="width:100%;max-width:420px"></canvas>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:5px">
+          <span style="color:#d93630">●</span> 여분으로 못 덮은 fail &nbsp;
+          <span style="color:#78828c">●</span> 덮인 fail &nbsp;
+          <span style="color:#4ca85c">▮</span> 배정된 여분 행·열<br>
+          fail 주소가 놓인 범위로 확대해 표시합니다(전체 주소 공간에 그리면 한 점으로 뭉칩니다).</div>
       </div>
       <div style="min-width:230px">
         <h3 style="margin-top:0">Fail Address 목록</h3>
@@ -766,57 +771,141 @@ $('emap').onclick = (ev) => {
   drawChip(mode, w.nbits[k], gi, w.ur[k], w.uc[k], mx, my, isCell);
 };
 
+// 파이썬 src/sim/eds.py의 repair_analysis를 그대로 옮긴 것.
+// 어떤 여분 행·열이 배정됐고 무엇이 안 덮였는지를 그림에 표시하기 위해 필요하다.
+function repairAnalysis(addrs, R, C) {
+  let remaining = addrs.map((a, i) => i);
+  const usedR = [], usedC = [], steps = [];
+  const rowsOf = (idx) => { const m = new Map();
+    idx.forEach(i => m.set(addrs[i][0], (m.get(addrs[i][0]) || 0) + 1)); return m; };
+  const colsOf = (idx) => { const m = new Map();
+    idx.forEach(i => m.set(addrs[i][1], (m.get(addrs[i][1]) || 0) + 1)); return m; };
+
+  // 1~3단계: must-repair — 남은 여분으로는 다른 축이 못 덮는 라인을 강제 배정
+  for (;;) {
+    if (!remaining.length) break;
+    const rw = rowsOf(remaining), cl = colsOf(remaining);
+    const mustR = [...rw].filter(([, c]) => c > (C - usedC.length)).map(([v]) => v);
+    const mustC = [...cl].filter(([, c]) => c > (R - usedR.length)).map(([v]) => v);
+    if (!mustR.length && !mustC.length) break;
+    for (const x of mustR) {
+      if (usedR.length >= R) return {ok: false, usedR, usedC, remaining,
+        reason: 'must-repair 행이 여분 행보다 많다', steps};
+      usedR.push(x); remaining = remaining.filter(i => addrs[i][0] !== x);
+      steps.push(`행 0x${x.toString(16).padStart(4, '0')} 강제 배정`);
+    }
+    for (const y of mustC) {
+      if (usedC.length >= C) return {ok: false, usedR, usedC, remaining,
+        reason: 'must-repair 열이 여분 열보다 많다', steps};
+      usedC.push(y); remaining = remaining.filter(i => addrs[i][1] !== y);
+      steps.push(`열 0x${y.toString(16).padStart(3, '0')} 강제 배정`);
+    }
+  }
+  // 4단계: 남은 fail을 가장 많이 덮는 행/열부터 그리디로 배정
+  while (remaining.length) {
+    const rw = [...rowsOf(remaining)].sort((a, b) => b[1] - a[1])[0] || [null, 0];
+    const cl = [...colsOf(remaining)].sort((a, b) => b[1] - a[1])[0] || [null, 0];
+    const canR = usedR.length < R, canC = usedC.length < C;
+    if (!canR && !canC) return {ok: false, usedR, usedC, remaining,
+      reason: '여분 행·열을 모두 썼는데 fail이 남았다', steps};
+    if (canR && (!canC || rw[1] >= cl[1])) {
+      usedR.push(rw[0]); remaining = remaining.filter(i => addrs[i][0] !== rw[0]);
+      steps.push(`행 0x${rw[0].toString(16).padStart(4, '0')} 배정 (fail ${rw[1]}개)`);
+    } else {
+      usedC.push(cl[0]); remaining = remaining.filter(i => addrs[i][1] !== cl[0]);
+      steps.push(`열 0x${cl[0].toString(16).padStart(3, '0')} 배정 (fail ${cl[1]}개)`);
+    }
+  }
+  return {ok: true, usedR, usedC, remaining: [], reason: '여분 행·열 안에서 전부 덮임', steps};
+}
+
 // 선택한 다이의 칩 내부 Fail Address를 그린다.
 // 웨이퍼 맵의 점 하나 = 칩 한 개, 여기는 그 칩 안쪽이다. 두 계층을 잇는 화면이다.
 function drawChip(mode, nbits, gi, ur, uc, dx, dy, isCell) {
   const box = $('echip');
-  if (!isCell || !nbits) {
-    box.style.display = 'none';
-    return;
-  }
+  if (!isCell || !nbits) { box.style.display = 'none'; return; }
   box.style.display = '';
   $('echiptitle').textContent = `— 웨이퍼 좌표 (${dx}, ${dy})`;
 
   const addrs = synth(mode, nbits, 16);
-  const S = 300, c = $('echipmap'), g = c.getContext('2d');
-  g.clearRect(0, 0, S, S);
-  g.strokeStyle = css('--border');
-  g.strokeRect(0.5, 0.5, S - 1, S - 1);
-  // 눈금: 주소 공간을 8등분해 옅은 격자를 깐다. 줄인지 덩어리인지 눈으로 잡기 쉽다.
-  g.strokeStyle = css('--die-out');
-  for (let i = 1; i < 8; i++) {
-    g.beginPath(); g.moveTo(i * S / 8, 0); g.lineTo(i * S / 8, S); g.stroke();
-    g.beginPath(); g.moveTo(0, i * S / 8); g.lineTo(S, i * S / 8); g.stroke();
-  }
-  g.fillStyle = gi === 1 ? '#e8a317' : '#d93630';
-  addrs.forEach(([x, y]) => {
-    g.beginPath();
-    g.arc(4 + (x / XMAX) * (S - 8), 4 + (y / YMAX) * (S - 8), 2.4, 0, 6.283);
-    g.fill();
+  const R = E.repair.spare_rows, C = E.repair.spare_cols;
+  const rep = repairAnalysis(addrs, R, C);
+  const covered = new Set();
+  addrs.forEach((a, i) => {
+    if (rep.usedR.includes(a[0]) || rep.usedC.includes(a[1])) covered.add(i);
   });
 
-  $('echiptbl').innerHTML = addrs.slice(0, 40).map(([x, y]) =>
-    `<tr><td>${x.toString(16).padStart(4, '0')}</td><td>${y.toString(16).padStart(3, '0')}</td></tr>`).join('')
+  // --- 확대: fail 주소가 실제로 놓인 범위에 맞춘다 ---
+  // 전체 주소 공간(X 16bit, Y 12bit)에 그리면 점이 한 곳에 뭉쳐 형태가 안 보인다.
+  const xs = addrs.map(a => a[0]), ys = addrs.map(a => a[1]);
+  let x0 = Math.min(...xs), x1 = Math.max(...xs);
+  let y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const padX = Math.max((x1 - x0) * 0.15, 4), padY = Math.max((y1 - y0) * 0.15, 4);
+  x0 -= padX; x1 += padX; y0 -= padY; y1 += padY;
+
+  const c = $('echipmap'), S = c.width, g = c.getContext('2d');
+  const L = 54, B = 26, T = 10, Rp = 10;
+  const PX = (v) => L + ((v - x0) / (x1 - x0)) * (S - L - Rp);
+  const PY = (v) => T + ((v - y0) / (y1 - y0)) * (S - T - B);
+  g.clearRect(0, 0, S, S);
+
+  // 배정된 여분 행/열을 밴드로 — 이것이 "무엇으로 덮었는가"다
+  g.fillStyle = 'rgba(76,168,92,0.20)';
+  const bw = Math.max((S - L - Rp) / Math.max(x1 - x0, 1), 3);
+  const bh = Math.max((S - T - B) / Math.max(y1 - y0, 1), 3);
+  rep.usedR.forEach(x => g.fillRect(PX(x) - bw / 2, T, bw, S - T - B));
+  rep.usedC.forEach(y => g.fillRect(L, PY(y) - bh / 2, S - L - Rp, bh));
+
+  // 축
+  g.strokeStyle = css('--border'); g.lineWidth = 1;
+  g.beginPath(); g.moveTo(L, T); g.lineTo(L, S - B); g.lineTo(S - Rp, S - B); g.stroke();
+  g.fillStyle = css('--muted'); g.font = '10px ui-monospace, monospace';
+  g.textAlign = 'center';
+  g.fillText('0x' + Math.max(0, Math.round(x0)).toString(16), L, S - B + 13);
+  g.fillText('0x' + Math.round(x1).toString(16), S - Rp, S - B + 13);
+  g.fillText('X (행 주소)', (L + S) / 2, S - B + 24);
+  g.textAlign = 'right';
+  g.fillText('0x' + Math.round(y1).toString(16), L - 5, S - B);
+  g.fillText('0x' + Math.max(0, Math.round(y0)).toString(16), L - 5, T + 8);
+
+  // fail 점 — 덮인 것과 안 덮인 것을 구분한다
+  addrs.forEach((a, i) => {
+    const on = covered.has(i);
+    g.fillStyle = on ? 'rgba(120,130,140,0.75)' : '#d93630';
+    g.beginPath(); g.arc(PX(a[0]), PY(a[1]), on ? 2.4 : 3.4, 0, 6.283); g.fill();
+    if (!on) {   // 안 덮인 것은 테두리를 둘러 눈에 띄게
+      g.strokeStyle = '#fff'; g.lineWidth = 1;
+      g.beginPath(); g.arc(PX(a[0]), PY(a[1]), 3.4, 0, 6.283); g.stroke();
+    }
+  });
+
+  $('echiptbl').innerHTML = addrs.slice(0, 40).map(([x, y], i) =>
+    `<tr style="${covered.has(i) ? 'opacity:.5' : 'color:var(--bad);font-weight:600'}">
+      <td>${x.toString(16).padStart(4, '0')}</td><td>${y.toString(16).padStart(3, '0')}</td></tr>`).join('')
     + (addrs.length > 40 ? `<tr><td colspan="2" style="color:var(--muted)">… 외 ${addrs.length - 40}건</td></tr>` : '');
 
   const res = classify(addrs, {lc: 4, lr: 0.30, bc: 6, br: 0.40});
   const md = (D.fail_address.modes || {})[mode] || {};
+  const span = `X 0x${Math.max(0, Math.round(x0)).toString(16)}~0x${Math.round(x1).toString(16)}, ` +
+               `Y 0x${Math.max(0, Math.round(y0)).toString(16)}~0x${Math.round(y1).toString(16)}`;
   $('echipnote').innerHTML = `
     <div class="kv" style="margin-bottom:9px">
-      <b>fail bit</b><span>${addrs.length}개</span>
-      <b>주소 분포가 말하는 것</b><span><b>${MODE_LABEL[res.mode] || res.mode}</b>
-        (설명 비율 ${res.score.toFixed(2)})</span>
-      <b>리페어 결과</b><span class="${gi === 1 ? 'ok' : 'bad'}">
-        여분 행 ${ur}/${E.repair.spare_rows}, 열 ${uc}/${E.repair.spare_cols} 사용 →
-        ${gi === 1 ? 'Repairable' : 'Fail'}</span>
+      <b>fail bit</b><span>${addrs.length}개 (안 덮인 것 <b class="${rep.remaining.length ? 'bad' : 'ok'}">${rep.remaining.length}개</b>)</span>
+      <b>주소 분포</b><span><b>${MODE_LABEL[res.mode] || res.mode}</b></span>
+      <b>표시 범위</b><span class="mono" style="font-size:11.5px">${span}</span>
+      <b>여분 사용</b><span class="${gi === 1 ? 'ok' : 'bad'}">행 ${rep.usedR.length}/${R},
+        열 ${rep.usedC.length}/${C} → ${rep.ok ? 'Repairable' : 'Fail'}</span>
     </div>
-    <div style="font-size:12.5px;white-space:pre-line">${(md.plain || '').trim()}</div>
-    <div style="font-size:12.5px;margin-top:7px"><b style="color:var(--muted)">관련 공정</b><br>${
-      (md.process_link || '').trim()}</div>
+    <div style="font-size:12.5px;margin-bottom:8px">
+      <b style="color:var(--muted)">판정 이유</b> ${rep.reason}</div>
+    <details><summary style="cursor:pointer;font-size:12.5px;font-weight:600">배정 과정 보기 (${rep.steps.length}단계)</summary>
+      <ol class="mono" style="font-size:11.5px;padding-left:20px;margin:6px 0 0">
+        ${rep.steps.slice(0, 12).map(x => `<li>${x}</li>`).join('')}
+        ${rep.steps.length > 12 ? `<li>… 외 ${rep.steps.length - 12}단계</li>` : ''}</ol></details>
+    <div style="font-size:12.5px;margin-top:8px;white-space:pre-line">${(md.plain || '').trim()}</div>
     <p style="font-size:11.5px;color:var(--muted);margin-top:8px">
-      이 주소들은 판정에 쓰인 것과 <b>같은 모드·같은 개수로 다시 만든 분포</b>입니다.
-      주소 자체가 합성이므로 성질은 같지만 개별 값은 판정 시점과 다릅니다.
-      리페어 결과는 판정 시점의 실제 계산 값입니다.</p>`;
+      이 주소들은 판정에 쓰인 것과 같은 모드·개수로 다시 만든 분포입니다.
+      주소 자체가 합성이므로 성질은 같지만 개별 값은 판정 시점과 다릅니다.</p>`;
 }
 
 // ================= 탭 2: SEM =================
