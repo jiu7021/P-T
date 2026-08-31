@@ -20,12 +20,15 @@
   <nav class="rail-group">
     <a class="rail-row" href="#s-overview"><span class="ri"></span>한눈에 보기</a>
   </nav>
-  <div class="rail-sec">분석</div>
+  <div class="rail-sec">직접 판정해보기</div>
   <nav class="rail-group">
-    <a class="rail-row" href="#s-sensor"><span class="ri"></span>공정 센서 관리도</a>
     <a class="rail-row" href="#s-eds"><span class="ri"></span>EDS 웨이퍼 테스트</a>
     <a class="rail-row" href="#s-fa"><span class="ri"></span>FA · SEM 결함 분석</a>
     <a class="rail-row" href="#s-map"><span class="ri"></span>웨이퍼 맵 패턴</a>
+  </nav>
+  <div class="rail-sec">공정 데이터 분석</div>
+  <nav class="rail-group">
+    <a class="rail-row" href="#s-sensor"><span class="ri"></span>공정 센서 관리도</a>
   </nav>
   <div class="rail-sec">기록</div>
   <nav class="rail-group">
@@ -94,83 +97,17 @@
           정해진 출력이 나오는지 봅니다. 여기서 떨어진 칩은 버리거나, 미리 넣어둔
           <b>여분 배선</b>으로 고쳐 씁니다. 아래 화면들은 그 판정과 원인 추적의 흐름을
           공개 데이터로 재현한 것입니다.</p>
-        <p class="para">왼쪽 차례대로 보시면 됩니다. <b>공정이 흔들린 시점</b>을 찾고,
-          <b>칩 하나하나를 판정</b>하고, 걸러진 칩을 <b>사진으로 확인</b>하는 순서입니다.
-          각 화면에서 실측으로 정한 부분과 가정으로 채운 부분을 구분해 표시했습니다.</p>
+        <p class="para">왼쪽 차례대로 보시면 됩니다. 먼저 <b>칩 하나하나를 판정</b>하는 화면에서
+          웨이퍼 위의 칩을 눌러보시고, 걸러진 칩을 <b>사진으로 확인</b>한 뒤,
+          웨이퍼 전체에 나타나는 <b>불량의 모양</b>을 봅니다. 마지막으로 그 배경이 되는
+          <b>공정 센서 기록</b>이 이어집니다. 각 화면에서 실측으로 정한 부분과 가정으로 채운
+          부분을 구분해 표시했습니다.</p>
         <div class="turn">
           <b>이 워크벤치가 보여주려는 것은 판정 결과가 아니라 판정의 근거입니다.</b>
           <p>칩을 누르면 어떤 검사에서 어떤 값이 나와 그 등급이 됐는지, 여분 배선이 어디에
             배정됐고 무엇이 덮이지 않았는지가 함께 나옵니다. 검증에서 무너진 결과도
             지우지 않고 그대로 남겼습니다.</p>
         </div>
-      </section>
-      <section class="panel" id="s-sensor">
-        <div class="panel-head"><h2>공정 센서 관리도</h2></div>
-
-  <div class="notice">이 탭은 <b>합성이 하나도 없습니다.</b> 실제 fab 라인에서 89일간 기록된
-    공정 센서값과 웨이퍼 합불 결과를 그대로 씁니다 (UCI SECOM).</div>
-  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(330px,1fr))">
-    <div class="card"><h4>데이터</h4><div id="sc_meta"></div></div>
-    <div class="card"><h4>월별 fail률 — 드리프트가 실재한다</h4>
-      <div id="sc_month"></div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:0">
-        fail률이 22.2%에서 2.9%로 8배 가까이 흔들립니다. <b>이 사실이 분할 방식을 결정합니다.</b></p></div>
-  </div>
-
-  <div class="card" style="margin-top:16px">
-    <h4>분할 방식이 결론을 바꾼다 <span style="font-weight:400;color:var(--accent);font-size:12.5px">— 이 절이 핵심</span></h4>
-    <p style="font-size:12.5px;margin-top:0">무작위로 섞어 나누면 <b>미래 웨이퍼로 학습해 과거를
-      맞히는</b> 셈이 됩니다. 실제 라인은 과거로 학습해 다음 로트를 판단합니다.
-      같은 데이터·같은 모델에 분할 방식만 바꿔 비교했습니다.</p>
-    <div class="xscroll"><div id="sc_split"></div></div>
-  </div>
-
-  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));margin-top:16px">
-    <div class="card"><h4>상위 N%를 재검사에 올린다면</h4><div id="sc_topk"></div></div>
-    <div class="card"><h4>개선 시도 — 튜닝해도 오르지 않는다</h4><div id="sc_trials"></div></div>
-    <div class="card"><h4>기여 센서 (참고)</h4><div id="sc_sensors"></div></div>
-  </div>
-
-  <div class="card" style="margin-top:16px">
-    <h4>관리도 — 센서값이 평소 범위를 벗어난 시점
-      <span style="font-weight:400;color:var(--muted);font-size:12.5px">앞 40%를 '평소'로 잡고 ±3σ를 한계로</span></h4>
-    <div class="flex" style="align-items:flex-start">
-      <div style="min-width:210px">
-        <label class="rng">센서</label>
-        <select id="dr_sel" size="15" style="height:330px"></select>
-        <div style="font-size:11.5px;color:var(--muted);margin-top:6px" id="dr_kinds"></div>
-      </div>
-      <div style="flex:1;min-width:340px">
-        <canvas id="dr_chart" width="720" height="270" style="width:100%"></canvas>
-        <div style="font-size:11.5px;color:var(--muted);margin-top:5px">
-          가로 = 시간 순 웨이퍼. 회색 = 측정값, 점선 = 관리 한계(±3σ), 굵은 선 = 평소 평균,
-          빨간 점 = 불량 웨이퍼, 세로 구분선 = 기준 구간의 끝</div>
-        <div id="dr_info" style="margin-top:10px"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(330px,1fr));margin-top:16px">
-    <div class="card"><h4>이상의 성격 — 대응이 다르다</h4><div id="dr_kind"></div></div>
-    <div class="card"><h4 style="color:var(--accent)">이상 구간과 불량의 관계 — 핵심</h4>
-      <div id="dr_exc"></div></div>
-  </div>
-
-  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(330px,1fr));margin-top:16px">
-    <div class="card"><h4>센서별 위험도 — 다중비교 보정을 먼저 한다</h4><div id="rk_risk"></div></div>
-    <div class="card"><h4>센서 열화 의심 — 이탈이 점점 잦아지는가</h4><div id="rk_deg"></div></div>
-  </div>
-
-  <div class="card" style="margin-top:16px">
-    <h4 style="color:var(--bad)">시간 순 검증 — 여기서 위 결과가 무너진다</h4>
-    <div id="rk_holdout"></div>
-  </div>
-
-  <div class="card" style="margin-top:16px">
-    <h4>결론 — 실패를 결과로 보고합니다</h4>
-    <div id="sc_concl"></div>
-  </div>
-
       </section>
       <section class="panel" id="s-eds">
         <div class="panel-head"><h2>EDS 웨이퍼 테스트</h2></div>
@@ -356,6 +293,74 @@
           라벨만 내놓지 않고 근거를 함께 보여주기 위해 넣었습니다.
           붉은 영역이 실제 불량 분포와 어긋나면, 그 예측은 의심해야 한다는 신호입니다.</p>
       </details>
+  </div>
+
+      </section>
+      <section class="panel" id="s-sensor">
+        <div class="panel-head"><h2>공정 센서 관리도</h2></div>
+
+  <div class="notice">이 탭은 <b>합성이 하나도 없습니다.</b> 실제 fab 라인에서 89일간 기록된
+    공정 센서값과 웨이퍼 합불 결과를 그대로 씁니다 (UCI SECOM).</div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(330px,1fr))">
+    <div class="card"><h4>데이터</h4><div id="sc_meta"></div></div>
+    <div class="card"><h4>월별 fail률 — 드리프트가 실재한다</h4>
+      <div id="sc_month"></div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:0">
+        fail률이 22.2%에서 2.9%로 8배 가까이 흔들립니다. <b>이 사실이 분할 방식을 결정합니다.</b></p></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h4>분할 방식이 결론을 바꾼다 <span style="font-weight:400;color:var(--accent);font-size:12.5px">— 이 절이 핵심</span></h4>
+    <p style="font-size:12.5px;margin-top:0">무작위로 섞어 나누면 <b>미래 웨이퍼로 학습해 과거를
+      맞히는</b> 셈이 됩니다. 실제 라인은 과거로 학습해 다음 로트를 판단합니다.
+      같은 데이터·같은 모델에 분할 방식만 바꿔 비교했습니다.</p>
+    <div class="xscroll"><div id="sc_split"></div></div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));margin-top:16px">
+    <div class="card"><h4>상위 N%를 재검사에 올린다면</h4><div id="sc_topk"></div></div>
+    <div class="card"><h4>개선 시도 — 튜닝해도 오르지 않는다</h4><div id="sc_trials"></div></div>
+    <div class="card"><h4>기여 센서 (참고)</h4><div id="sc_sensors"></div></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h4>관리도 — 센서값이 평소 범위를 벗어난 시점
+      <span style="font-weight:400;color:var(--muted);font-size:12.5px">앞 40%를 '평소'로 잡고 ±3σ를 한계로</span></h4>
+    <div class="flex" style="align-items:flex-start">
+      <div style="min-width:210px">
+        <label class="rng">센서</label>
+        <select id="dr_sel" size="15" style="height:330px"></select>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:6px" id="dr_kinds"></div>
+      </div>
+      <div style="flex:1;min-width:340px">
+        <canvas id="dr_chart" width="720" height="270" style="width:100%"></canvas>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:5px">
+          가로 = 시간 순 웨이퍼. 회색 = 측정값, 점선 = 관리 한계(±3σ), 굵은 선 = 평소 평균,
+          빨간 점 = 불량 웨이퍼, 세로 구분선 = 기준 구간의 끝</div>
+        <div id="dr_info" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(330px,1fr));margin-top:16px">
+    <div class="card"><h4>이상의 성격 — 대응이 다르다</h4><div id="dr_kind"></div></div>
+    <div class="card"><h4 style="color:var(--accent)">이상 구간과 불량의 관계 — 핵심</h4>
+      <div id="dr_exc"></div></div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(330px,1fr));margin-top:16px">
+    <div class="card"><h4>센서별 위험도 — 다중비교 보정을 먼저 한다</h4><div id="rk_risk"></div></div>
+    <div class="card"><h4>센서 열화 의심 — 이탈이 점점 잦아지는가</h4><div id="rk_deg"></div></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h4 style="color:var(--bad)">시간 순 검증 — 여기서 위 결과가 무너진다</h4>
+    <div id="rk_holdout"></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h4>결론 — 실패를 결과로 보고합니다</h4>
+    <div id="sc_concl"></div>
   </div>
 
       </section>
@@ -605,7 +610,8 @@ function drawWafer(i) {
 
 // ================= 탭 EDS: 웨이퍼 테스트 =================
 const E = D.eds;
-const G_COL = ['#4ca85c', '#f0bf33', '#d93630'];
+const G_COL = ['#4ca85c', '#f0bf33', '#d93630'];          // 면(막대·캔버스)용
+const G_TXT = ['var(--grade-good)', 'var(--grade-rep)', 'var(--grade-fail)'];  // 글자용
 const G_NAME = ['Good', 'Repairable', 'Fail'];
 const G_KO = ['전 시험 통과', '여분 행·열로 복구 가능', '복구 불가'];
 let eCur = 0, eGeom = null;
@@ -641,7 +647,7 @@ let eCur = 0, eGeom = null;
     항목 간 상대 관계만 물리적으로 타당하게 잡았습니다.</p>`;
 
   $('egrades').innerHTML = E.grades.map((g, i) => `<div style="margin-bottom:8px">
-      <b style="color:${G_COL[i]}">${g.label}</b>
+      <b style="color:${G_TXT[i]}">${g.label}</b>
       <div style="font-size:12.5px;white-space:pre-line">${g.rule.trim()}</div>
       ${g.note ? `<div style="font-size:12px;color:var(--warn);white-space:pre-line;margin-top:4px">${g.note.trim()}</div>` : ''}
     </div>`).join('');
@@ -794,7 +800,7 @@ $('emap').onclick = (ev) => {
   }
 
   $('einfo').innerHTML = `
-    <div style="font-size:16px;font-weight:700;color:${G_COL[gi]};margin-bottom:2px">${G_NAME[gi]}</div>
+    <div style="font-size:16px;font-weight:700;color:${G_TXT[gi]};margin-bottom:2px">${G_NAME[gi]}</div>
     <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">${G_KO[gi]}</div>
     <div class="kv" style="margin-bottom:10px">
       <b>좌표</b><span class="mono">(${mx}, ${my})</span>

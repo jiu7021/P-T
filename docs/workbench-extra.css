@@ -67,3 +67,93 @@ table.kv th{color:var(--ink-40);font-weight:600;font-size:12.5px;text-align:righ
 table.kv th:first-child{text-align:left}
 
 details > summary{cursor:pointer}
+
+/* ── 기존 워크벤치가 쓰던 변수들을 키트 토큰에 잇는다 ─────────────────
+   이 값들이 정의되지 않으면 색 지정이 통째로 무효가 되어 부모 색을 물려받는다.
+   밝은 면 위에서 흰 글씨가 나오던 원인이 이것이었다. */
+:root{
+  --muted: var(--ink-40);          /* 보조 텍스트 */
+  --bg: var(--surface-page);
+  --die-out: var(--ink-10);        /* 웨이퍼 밖 */
+  --die-pass: #4c8ee0;             /* 정상 다이 */
+  --die-fail: #f0553f;             /* 불량 다이 */
+  --chip-look: var(--accent);
+  --chip-syn-bg: var(--warn-fill);
+}
+
+/* 밝은 면(파스텔) 위에서는 보조 텍스트도 어두워야 읽힌다.
+   .turn 은 채도 있는 파란 면이라 기본 --muted(밝은 회색)를 쓰면 글자가 사라진다. */
+.turn [style*="--muted"], .turn .dim{color:rgba(28,28,28,.66) !important}
+.kpi.tint [style*="--muted"], .kpi.tint-2 [style*="--muted"]{color:rgba(28,28,28,.62) !important}
+.notice [style*="--muted"]{color:rgba(28,28,28,.66) !important}
+
+/* ── 타이포그래피 ──────────────────────────────────────────────
+   한글은 Inter 에 글리프가 없어 Noto Sans KR 로 떨어진다. 두 서체는 시각적
+   크기와 자간이 달라, 섞이면 줄마다 들쭉날쭉해 보인다. 아래는 그 보정이다. */
+body{
+  font-family:'Inter','Noto Sans KR',var(--font-sans);
+  letter-spacing:-0.011em;                 /* 한글은 기본 자간이 넓게 느껴진다 */
+  word-break:keep-all;                     /* 단어 중간에서 줄이 끊기지 않게 */
+  -webkit-font-smoothing:antialiased;
+}
+.hero h1{letter-spacing:-0.028em;line-height:1.28}
+.hero .sub{line-height:1.72;letter-spacing:-0.008em}
+.panel-head h2{letter-spacing:-0.022em}
+h4{letter-spacing:-0.016em}
+.para{line-height:1.78;letter-spacing:-0.006em}
+.kpi-lab{letter-spacing:-0.004em}
+.kpi-val{letter-spacing:-0.026em;font-variant-numeric:tabular-nums}
+.kpi-sub{line-height:1.6}
+.card .rat,.cand .rat{line-height:1.72}
+.limits li{line-height:1.76}
+.step p{line-height:1.72}
+.turn p{line-height:1.74}
+table.kv td,table.kv th{line-height:1.55}
+.rail-row{letter-spacing:-0.008em}
+/* 숫자가 세로로 늘어서는 곳은 자릿수를 맞춘다 */
+.kv td,.kpi-val,.mono{font-variant-numeric:tabular-nums}
+
+/* ── 밝은 면 위의 글자색 ────────────────────────────────────────
+   --fill-blue 는 테마와 무관하게 항상 밝은 파스텔이다. 여기에 --text-inverse 를
+   쓰면 다크 테마에서 흰 글씨가 되어 사라진다(대비 1.14). 고정된 어두운 색을 쓴다. */
+.notice{color:rgba(28,28,28,.88)}
+.notice b,.notice strong{color:rgba(28,28,28,.96)}
+.notice a{color:#0b4ea2}
+
+/* 반투명 tint 면(--warn-fill 등)은 바탕 테마를 그대로 비추므로 본문색이 맞다. */
+.warnbox{color:var(--ink)}
+.warnbox b,.warnbox strong{color:var(--ink)}
+
+/* 상태색 — 다크 배경에서 원색 그대로는 대비가 얕다. 조금 밝혀 읽히게 한다. */
+:root[data-theme="dark"] .bad{color:#ff8078}
+:root[data-theme="dark"] .ok{color:#5ee27f}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .bad{color:#ff8078}
+  :root:not([data-theme="light"]) .ok{color:#5ee27f}
+}
+
+/* 표 안의 숫자는 보조 텍스트보다 진하게 — 읽으라고 넣은 값이다 */
+.mono{color:var(--ink-80)}
+.kv .mono,td .mono{color:var(--ink)}
+
+/* 보조 텍스트가 얕아 표 안 숫자가 잘 안 읽힌다(대비 2.9). 다크에서만 조금 올린다. */
+:root[data-theme="dark"]{--muted:rgba(255,255,255,.56)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--muted:rgba(255,255,255,.56)}
+}
+
+/* 라이트 테마의 보조 텍스트가 얕다(흰 바탕 대비 2.5). 라이트에서만 진하게 올린다.
+   다크 정의를 덮지 않도록 조건을 명시한다. */
+:root[data-theme="light"]{--ink-40:rgba(28,28,28,.58)}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){--ink-40:rgba(28,28,28,.58)}
+}
+:root[data-theme="light"] .mono{color:var(--ink)}
+
+/* 등급 글자색 — 면(막대·캔버스)에 쓰는 색과 분리한다.
+   면은 원색이어도 구분되지만, 글자는 배경과 대비가 필요하다. */
+:root{--grade-good:#1f7a35; --grade-rep:#8a6100; --grade-fail:#b3241d}
+:root[data-theme="dark"]{--grade-good:#5cbf6d; --grade-rep:#f5c945; --grade-fail:#f2635a}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--grade-good:#5cbf6d; --grade-rep:#f5c945; --grade-fail:#f2635a}
+}

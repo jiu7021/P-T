@@ -29,10 +29,12 @@ OUT = DOCS / "index.html"
 # (섹션 id, 레일 표기, 원본 템플릿의 탭 id, 레일 그룹)
 SECTIONS = [
     ("s-overview", "한눈에 보기", None, "개요"),
-    ("s-sensor", "공정 센서 관리도", "tS", "분석"),
-    ("s-eds", "EDS 웨이퍼 테스트", "tE", "분석"),
-    ("s-fa", "FA · SEM 결함 분석", "t2", "분석"),
-    ("s-map", "웨이퍼 맵 패턴", "t1", "분석"),
+    # 눌러볼 수 있는 화면을 앞에 둔다. 처음 여는 사람이 바로 만져볼 수 있어야 한다.
+    ("s-eds", "EDS 웨이퍼 테스트", "tE", "직접 판정해보기"),
+    ("s-fa", "FA · SEM 결함 분석", "t2", "직접 판정해보기"),
+    ("s-map", "웨이퍼 맵 패턴", "t1", "직접 판정해보기"),
+    # 배경이 되는 공정 데이터 분석은 뒤로 뺀다.
+    ("s-sensor", "공정 센서 관리도", "tS", "공정 데이터 분석"),
     ("s-feedback", "판정 피드백", "t4", "기록"),
     ("s-limit", "한계와 근거", "t5", "기록"),
 ]
@@ -107,9 +109,11 @@ OVERVIEW = """
           정해진 출력이 나오는지 봅니다. 여기서 떨어진 칩은 버리거나, 미리 넣어둔
           <b>여분 배선</b>으로 고쳐 씁니다. 아래 화면들은 그 판정과 원인 추적의 흐름을
           공개 데이터로 재현한 것입니다.</p>
-        <p class="para">왼쪽 차례대로 보시면 됩니다. <b>공정이 흔들린 시점</b>을 찾고,
-          <b>칩 하나하나를 판정</b>하고, 걸러진 칩을 <b>사진으로 확인</b>하는 순서입니다.
-          각 화면에서 실측으로 정한 부분과 가정으로 채운 부분을 구분해 표시했습니다.</p>
+        <p class="para">왼쪽 차례대로 보시면 됩니다. 먼저 <b>칩 하나하나를 판정</b>하는 화면에서
+          웨이퍼 위의 칩을 눌러보시고, 걸러진 칩을 <b>사진으로 확인</b>한 뒤,
+          웨이퍼 전체에 나타나는 <b>불량의 모양</b>을 봅니다. 마지막으로 그 배경이 되는
+          <b>공정 센서 기록</b>이 이어집니다. 각 화면에서 실측으로 정한 부분과 가정으로 채운
+          부분을 구분해 표시했습니다.</p>
         <div class="turn">
           <b>이 워크벤치가 보여주려는 것은 판정 결과가 아니라 판정의 근거입니다.</b>
           <p>칩을 누르면 어떤 검사에서 어떤 값이 나와 그 등급이 됐는지, 여분 배선이 어디에
@@ -151,6 +155,15 @@ def main() -> int:
     js = re.sub(r"document\.querySelectorAll\('nav button'\)\.forEach\(b => b\.onclick.*?\}\);\n",
                 "// 탭 전환은 SnowUI 레일이 담당한다(snowui-shell.js).\n", js, flags=re.S)
     # 요소가 없으면 조용히 넘어가도록 한다. 화면 구성이 바뀌어도 나머지가 멈추지 않는다.
+    # 등급 색은 두 용도로 쓰인다.
+    #   막대 배경·캔버스 채우기 → 면이므로 원색 그대로 둔다(테마 무관하게 구분된다)
+    #   글자 색               → 배경 대비가 필요하다. 테마별로 달라야 하므로 CSS 변수로 뺀다
+    js = js.replace(
+        "const G_COL = ['#4ca85c', '#f0bf33', '#d93630'];",
+        "const G_COL = ['#4ca85c', '#f0bf33', '#d93630'];          // 면(막대·캔버스)용\n"
+        "const G_TXT = ['var(--grade-good)', 'var(--grade-rep)', 'var(--grade-fail)'];  // 글자용")
+    js = js.replace('<b style="color:${G_COL[i]}">', '<b style="color:${G_TXT[i]}">')
+    js = js.replace('color:${G_COL[gi]};margin-bottom', 'color:${G_TXT[gi]};margin-bottom')
     js = js.replace("const $ = (id) => document.getElementById(id);",
                     "const $ = (id) => document.getElementById(id) "
                     "|| document.createElement('div');  // 없는 요소는 빈 노드로 대체")
