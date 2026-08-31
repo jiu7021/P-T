@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>웨이퍼 테스트 판정 워크벤치</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="snowui-shell.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="rail">
+  <div class="rail-brand"><span class="rail-dot"></span><span>웨이퍼 테스트 워크벤치</span></div>
+
+  <div class="rail-sec">개요</div>
+  <nav class="rail-group">
+    <a class="rail-row" href="#s-summary"><span class="ri"></span>한눈에 보기</a>
+    <a class="rail-row" href="#s-problem"><span class="ri"></span>문제와 발견</a>
+  </nav>
+
+  <div class="rail-sec">과정</div>
+  <nav class="rail-group">
+    <a class="rail-row" href="#s-hunt"><span class="ri"></span>가설과 검증</a>
+    <a class="rail-row" href="#s-build"><span class="ri"></span>구현</a>
+    <a class="rail-row" href="#s-result"><span class="ri"></span>결과</a>
+    <a class="rail-row" href="#s-limit"><span class="ri"></span>한계</a>
+  </nav>
+
+  <nav class="rail-group rail-ext">
+    <a class="rail-row" href="workbench.html">분석 워크벤치 열기 ↗</a>
+    <a class="rail-row" href="https://github.com/jiu7021/P-T">저장소 ↗</a>
+    <a class="rail-row" href="http://mirlab.org/dataset/public/">WM-811K 데이터 ↗</a>
+    <a class="rail-row" href="https://doi.org/10.5281/zenodo.16895427">Carinthia-S 데이터 ↗</a>
+    <a class="rail-row" href="https://archive.ics.uci.edu/dataset/179/secom">SECOM 데이터 ↗</a>
+  </nav>
+
+  <div class="rail-foot">SnowUI Design System</div>
+</aside>
+
+<div class="col">
+  <header class="topbar">
+    <div class="crumb"><span>포트폴리오</span><span class="sep">/</span><b id="crumb-cur">한눈에 보기</b></div>
+    <div class="topbar-r">
+      <span class="badge">개인 프로젝트 · 2026.08</span>
+      <button id="theme-btn" class="icon-btn" type="button" aria-label="테마 전환">◐</button>
+    </div>
+  </header>
+
+  <div class="scroll">
+    <div class="hero">
+      <h1>웨이퍼 테스트 판정 및 불량 분석 워크벤치</h1>
+      <p class="sub">반도체 후공정에서 웨이퍼의 합격·불합격을 무엇을 근거로 가르는지,
+        걸러진 칩의 원인을 어떻게 좁히는지를 공개 데이터만으로 처음부터 구현했습니다.
+        판정 결과보다 <b>판정의 근거를 눈에 보이게 만드는 것</b>을 목표로 삼았습니다.</p>
+    </div>
+
+    <main>
+
+      <!-- ─────────── 한눈에 보기 ─────────── -->
+      <section class="panel" id="s-summary">
+        <div class="panel-head"><h2>한눈에 보기</h2>
+          <div class="hint">공개 데이터 3종 · 칩 213만 개 전수 판정</div></div>
+        <div class="kpi-row">
+          <div class="kpi tint">
+            <div class="kpi-lab">전수 판정한 칩</div>
+            <div class="kpi-val">2,128,718</div>
+            <div class="kpi-sub">웨이퍼 2,000장 · 실측 데이터 기반</div>
+          </div>
+          <div class="kpi tint-2">
+            <div class="kpi-lab">불량 중 복구 가능</div>
+            <div class="kpi-val">53.6 %</div>
+            <div class="kpi-sub">불량 칩 490,546개 중 여분 배선으로 살릴 수 있는 비율</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-lab">검증이 잡아낸 오류</div>
+            <div class="kpi-val">275,159</div>
+            <div class="kpi-sub">정상 칩이 불량으로 뒤집힌 건수 · 원인 수정 후 재판정</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-lab">엄격 검증 후 p 값</div>
+            <div class="kpi-val">0.010 → 0.155</div>
+            <div class="kpi-sub">시간 순으로 나누자 사라진 유의성 · 그대로 기록</div>
+          </div>
+        </div>
+        <p class="para">읽는 분이 이 분야를 모른다고 가정하고 씁니다. 반도체 칩은 둥근 원판(웨이퍼)
+          위에 수백 개가 한꺼번에 만들어집니다. 다 만든 뒤 <b>웨이퍼 테스트</b>라는 전기 검사를 거치는데,
+          바늘을 칩에 대고 전압을 넣어 정해진 출력이 나오는지 봅니다. 여기서 떨어진 칩은
+          버리거나, 미리 넣어둔 <b>여분 배선</b>으로 고쳐 씁니다. 이 프로젝트는 그 판정과
+          원인 추적의 흐름을 공개 데이터로 재현한 것입니다.</p>
+      </section>
+
+      <!-- ─────────── 문제와 발견 ─────────── -->
+      <section class="panel" id="s-problem">
+        <div class="panel-head"><h2>문제와 발견</h2>
+          <div class="hint">공정이 흔들리는 순간은 남지만, 그것이 불량으로 이어지는지는 별개였다</div></div>
+
+        <p class="para">시작은 단순한 질문이었습니다. <b>공정 장비가 남긴 기록만 보고
+          그 웨이퍼가 불합격할지 미리 알 수 있을까.</b> 실제 라인에서 89일간 기록된
+          공개 데이터(SECOM)로 확인했습니다. 웨이퍼 1,567장 각각에 센서 590개의 측정값과
+          합격·불합격 결과가 붙어 있는 자료입니다.</p>
+
+        <p class="para">먼저 눈에 띈 것은 <b>불량률 자체가 흔들린다</b>는 사실이었습니다.
+          7월 22.22%, 8월 9.19%, 9월 2.88%, 10월 6.13%. 같은 라인인데 달마다 8배 가까이 달랐습니다.
+          이 사실 하나가 이후 모든 검증 방식을 정했습니다. 데이터를 무작위로 섞어 나누면
+          <b>나중 기간의 웨이퍼가 앞 기간을 판단하는 데 섞여 들어가기</b> 때문입니다.</p>
+
+        <img class="fig" src="img/secom_control_chart.png"
+             alt="공정 센서 관리도. 평소 범위를 벗어난 구간과 불량 웨이퍼 위치가 함께 표시된 시계열 그래프">
+
+        <p class="para">센서값을 평소 범위(앞 40% 구간의 평균 ±3σ)와 대조하자 이상이 실제로 보였습니다.
+          442개 센서 중 <b>28개는 한번 벗어난 뒤 돌아오지 않았고</b>(지속적 이동),
+          <b>52개는 잠깐 튀었다가 제자리로 복귀</b>했습니다. 둘은 현장 대응이 다릅니다.
+          전자는 보정이나 정비 대상이고, 후자는 그 기간에 만든 웨이퍼를 따로 확인할 대상입니다.
+          예를 들어 어느 센서는 관리 범위를 벗어나는 빈도가 전반 3.72%에서 후반 87.10%까지 늘었습니다.</p>
+
+        <div class="turn">
+          <b>그런데 여기서 예상이 빗나갔습니다.</b>
+          <p>공정이 흔들린 기록은 이렇게 뚜렷한데, 정작 <strong>그 센서값으로 합격·불합격을
+            맞히는 것은 되지 않았습니다.</strong> 개별 센서 중 합격군과 불합격군을 뚜렷이 갈라놓는 것이
+            <strong>하나도 없었습니다</strong>(효과크기 0.8 이상 = 0개). 이 사실이 이후 가설 검증의 출발점이 됐습니다.</p>
+        </div>
+      </section>
+
+      <!-- ─────────── 가설과 검증 ─────────── -->
+      <section class="panel" id="s-hunt">
+        <div class="panel-head"><h2>가설과 검증</h2>
+          <div class="hint">기각된 것을 지우지 않았습니다. 무너진 과정이 결과의 일부입니다</div></div>
+
+        <div class="steps">
+          <div class="step no"><span class="step-n">1</span><div>
+            <b>공정 센서 기록으로 웨이퍼 합불을 예측할 수 있다 — 기각</b>
+            <p>시간 순으로 학습·평가를 나누자 예측력이 거의 사라졌습니다(ROC-AUC 0.551).
+              불량 가능성이 높은 순으로 상위 5%를 재검사한다고 가정해도 <strong>실제 불량 검출률은 0%</strong>였습니다.
+              특징 선택, 정규화 강도 조정, 최근 데이터만 학습 등 <strong>7가지를 시도했지만
+              기저율의 1.27배를 넘지 못했습니다.</strong> 튜닝을 안 해서가 아니라, 해도 오르지 않았습니다.</p></div></div>
+
+          <div class="step no"><span class="step-n">2</span><div>
+            <b>센서 이상이 잦은 웨이퍼는 불량률이 높다 — 기각</b>
+            <p>전체 데이터로 보면 그럴듯했습니다. 여러 센서가 동시에 관리 범위를 벗어난 웨이퍼 74장의
+              불량률은 14.86%로, 나머지(6.23%)의 <strong>2.39배</strong>였고 통계 검정도 통과했습니다(p = 0.0078).
+              그런데 <strong>위험도를 앞 기간에서만 학습하고 뒤 기간에서 평가하자</strong>
+              위험 센서가 27개에서 <strong>0개</strong>로 사라지고 유의성도 없어졌습니다(p = 0.1551).
+              같은 데이터로 기준을 정하고 같은 데이터로 검증한 것이 문제였습니다.</p></div></div>
+
+          <div class="step half"><span class="step-n">3</span><div>
+            <b>불량은 웨이퍼 위에서 뭉쳐서 나타난다 — 성립하나 절반만 쓸 수 있음</b>
+            <p>실제 양산 웨이퍼 지도 데이터로 확인했습니다. 이웃한 칩이 모두 정상일 때 그 칩의 불량률은
+              9.01%인데, 이웃 4개가 불량이면 <strong>87.12%</strong>로 뛰었습니다. 약 9.7배입니다.
+              공간적으로 뭉친다는 사실 자체는 실측으로 확인됐습니다. 다만 그 뭉침이
+              <strong>칩 안쪽에서 어떤 형태의 고장으로 나타나는지</strong>는 공개 데이터가 없어
+              가정으로 채워야 했습니다.</p></div></div>
+
+          <div class="step ok"><span class="step-n">4</span><div>
+            <b>같은 개수의 고장이라도 '모양'이 복구 성패를 가른다 — 성립</b>
+            <p>칩 내부 고장 위치가 한 줄로 늘어서면 여분 배선 <strong>하나</strong>로 그 줄을 통째로 대체할 수 있어
+              <strong>100%</strong> 복구됩니다. 반면 한 구역에 덩어리로 뭉치면 여분을 모두 써도
+              <strong>4.48%</strong>만 복구됩니다. 가정값을 바꿔가며 확인해도 이 순서는 뒤집히지 않았습니다.</p></div></div>
+
+          <div class="step ok"><span class="step-n">5</span><div>
+            <b>합성으로 채운 값이 실측 판정을 훼손하지 않는지 코드로 강제할 수 있다 — 성립</b>
+            <p>"합성값이 실측 판정을 뒤집으면 저장하지 말고 중단하라"는 조건을 넣자,
+              초기 구현에서 <strong>정상 칩 275,159개가 불량으로 뒤집힌 것</strong>이 걸렸습니다.
+              값 생성에 쓴 식의 꼬리가 규격을 벗어난 것이 원인이었고, 분포를 규격 안에 가두되
+              공간적 유사성은 유지하도록 고쳤습니다. 수정 뒤 불일치 0을 확인했습니다.</p></div></div>
+        </div>
+
+        <img class="fig" src="img/split_bias.png"
+             alt="왼쪽은 무작위 분할이 성능 지표를 2.5배 부풀리는 비교 막대그래프, 오른쪽은 시간 순 분리 후 p값이 유의수준을 넘어서는 비교 막대그래프">
+
+        <div class="turn" style="margin-top:20px">
+          <b>설계 자체를 되돌린 지점이 있습니다.</b>
+          <p>처음에는 웨이퍼 테스트 흐름 안에 결함 사진 분석을 넣었습니다. 확인해 보니
+            <strong>웨이퍼 테스트는 전압을 넣어 출력을 보는 전기 검사</strong>이고, 사진으로 결함을 들여다보는 것은
+            걸러진 칩을 나중에 뜯어보는 <strong>별도 단계</strong>였습니다. 완성한 사진 분석 모듈을 버리지 않고
+            그 단계로 위치를 옮긴 뒤, 웨이퍼 테스트 쪽은 전압·전류·온도 검사와 복구 판정으로
+            전면 교체했습니다.</p>
+          <table class="cmp">
+            <tr><th></th><th>처음 설계</th><th>고친 뒤</th></tr>
+            <tr><td>웨이퍼 테스트 단계</td><td>결함 사진 분석</td><td><b>전압·전류·리텐션 전기 검사</b></td></tr>
+            <tr><td>합불 기준</td><td>사진 속 결함 유무</td><td><b>측정값과 규격 대조</b></td></tr>
+            <tr><td>사진 분석의 위치</td><td>같은 흐름 안</td><td><b>걸러진 칩의 원인 분석 단계</b></td></tr>
+            <tr><td>검사 규격값</td><td>임의로 정한 값</td><td><b>공개 데이터시트 실제 값</b></td></tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ─────────── 구현 ─────────── -->
+      <section class="panel" id="s-build">
+        <div class="panel-head"><h2>구현</h2>
+          <div class="hint">실측으로 정한 것과 가정으로 채운 것을 분리했습니다</div></div>
+
+        <p class="para">웨이퍼 위 어느 칩이 불량인지는 <b>실측 데이터가 정합니다.</b>
+          다만 그 칩이 <b>어느 검사에서 어떤 값으로 걸렸는지</b>는 공개된 자료가 없어 채워 넣어야 했습니다.
+          이 경계를 코드에서 분리하고, 채워 넣은 값이 실측 판정을 바꾸면 결과를 저장하지 않고
+          멈추도록 만들었습니다.</p>
+
+        <table class="kv">
+          <tr><td>어느 칩이 불량인가 · 웨이퍼 위 분포</td><td>실측 (양산 라인 웨이퍼 지도)</td></tr>
+          <tr><td>공정 센서 측정값 · 합불 결과</td><td>실측 (라인 89일 기록)</td></tr>
+          <tr><td>결함 사진과 전문가 표시 영역</td><td>실측 (SEM 이미지 4,591장)</td></tr>
+          <tr><td>검사 규격값</td><td>공개 데이터시트 실제 값</td></tr>
+          <tr><td>검사별 측정값 · 칩 내부 고장 위치</td><td><b>가정으로 채움</b> (공개 자료 없음)</td></tr>
+        </table>
+
+        <p class="para" style="margin-top:20px">검사는 실제 순서를 따라 여섯 단계로 구성했습니다.
+          배선이 끊기거나 붙었는지 보는 검사, 전류가 규격 안인지 보는 검사, 정해진 값을 쓰고
+          다시 읽어 맞는지 보는 검사, 그리고 값을 기억하는 시간을 재는 검사입니다.
+          고온 조건에서도 반복합니다. 상온에서 겨우 통과하던 칩이 여기서 떨어지기 때문입니다.</p>
+
+        <p class="para">떨어진 칩은 <b>고칠 수 있는지</b>를 따집니다. 칩에는 여분 배선이 미리 들어 있어서,
+          고장 난 줄을 통째로 여분으로 갈아끼울 수 있습니다. 다만 여분 개수가 정해져 있어
+          <b>고장이 어떤 모양으로 퍼져 있느냐</b>에 따라 성패가 갈립니다.</p>
+
+        <img class="fig" src="img/eds_wafer_grades.png"
+             alt="웨이퍼 9종의 판정 결과 지도. 초록은 합격, 노랑은 복구 가능, 빨강은 복구 불가">
+
+        <p class="para">화면에서 칩 하나를 누르면 그 칩의 측정값과 규격, 그리고 왜 그 등급이 됐는지가
+          문장으로 나옵니다. 복구 가능하거나 불가한 칩을 누르면 <b>칩 안쪽 고장 위치 분포</b>가 펼쳐지고,
+          여분 배선이 어디에 배정됐는지, 무엇이 덮이지 않았는지가 그림으로 표시됩니다.</p>
+
+        <p class="para"><a class="inline-link" href="workbench.html">분석 워크벤치에서 직접 눌러보기 →</a></p>
+      </section>
+
+      <!-- ─────────── 결과 ─────────── -->
+      <section class="panel" id="s-result">
+        <div class="panel-head"><h2>결과</h2>
+          <div class="hint">수치는 모두 재현 가능하며, 난수 조건을 고정했습니다</div></div>
+
+        <table class="kv">
+          <tr><td>전수 판정한 칩</td><td>2,128,718개 (웨이퍼 2,000장)</td></tr>
+          <tr><td>합격</td><td>1,638,172개 · 76.96 %</td></tr>
+          <tr><td>복구 가능</td><td>262,809개 · 12.35 %</td></tr>
+          <tr><td>복구 불가</td><td>227,737개 · 10.70 %</td></tr>
+          <tr><td>불량 칩 중 복구 가능 비율</td><td><b>53.6 %</b> (490,546개 중)</td></tr>
+          <tr><td>실측 판정과 불일치</td><td>0건 (정상 → 합격 1,638,172건 / 불량 → 복구·불가 490,546건)</td></tr>
+        </table>
+
+        <img class="fig" src="img/repair_by_mode.png"
+             alt="고장 모양별 복구 성공률 가로 막대그래프. 한 줄 형태는 100%, 덩어리 형태는 4.5%">
+
+        <p class="para">가장 분명하게 남은 결과는 이것입니다. <b>고장 개수가 같아도 모양이 다르면
+          결과가 갈립니다.</b> 한 줄로 늘어선 고장은 여분 배선 하나로 정리되지만, 덩어리로 뭉친 고장은
+          여분을 다 써도 남습니다. 실제 현장이라면 <b>여분을 늘리는 것보다 덩어리 형태의 불량 자체를
+          줄이는 편이 효과가 크다</b>는 뜻이 됩니다.</p>
+
+        <p class="para">이 결론이 가정에 얼마나 기대는지도 확인했습니다. 여분 개수를 2개에서 8개까지
+          바꾸고, 복구 불가 비율과 고장 모양 분포를 바꿔가며 전체를 다시 돌렸습니다.
+          <b>합격 비율은 어떤 조건에서도 고정</b>이었습니다. 합격과 불량의 경계는 실측이 정하기 때문입니다.
+          움직인 것은 가정이 정하는 복구 가능·불가 배분뿐이었고, 그 폭은 아래와 같습니다.</p>
+
+        <table class="kv">
+          <tr><td>여분 배선 개수 2 → 8</td><td>복구 가능 비율 11.12 % → 16.00 % (폭 4.88 %p)</td></tr>
+          <tr><td>복구 불가 비율 가정 0.10 → 0.60</td><td>복구 불가 10.48 % → 19.68 % (폭 9.20 %p)</td></tr>
+          <tr><td>고장 모양 분포 시나리오</td><td>복구 가능 8.57 % → 19.63 % (폭 <b>11.06 %p</b>)</td></tr>
+        </table>
+
+        <p class="para" style="margin-top:20px">공정 센서 쪽은 앞서 적은 대로 예측이 성립하지 않았습니다.
+          다만 검증 과정에서 얻은 것이 있습니다. <b>같은 데이터에 같은 모델을 쓰고 나누는 방식만 바꿨을 때
+          성능 지표가 2.5배 부풀려졌습니다.</b> 센서 442개를 각각 검정하면 관계가 없어도
+          유의수준 5%에서 약 12개가 우연히 걸리므로 보정을 적용했고, 보정 전 37개이던 위험 센서는
+          27개로 줄었습니다. 그마저도 시간 순으로 나누자 0개가 됐습니다.</p>
+
+        <p class="para">결함 사진 분석은 전문가가 표시한 영역과 모델이 찾은 영역의 일치도가
+          0.939였습니다(1에 가까울수록 일치). 결함이 없는 사진 34장에서는 <b>잘못 찾아낸 부분이
+          한 곳도 없었습니다.</b> 다만 이 데이터에는 웨이퍼나 촬영 배치를 구분할 정보가 없어
+          같은 웨이퍼의 이웃 영역이 학습과 평가에 함께 들어갔을 수 있습니다. 이 수치를
+          일반화 성능이라 부르지 않습니다.</p>
+      </section>
+
+      <!-- ─────────── 한계 ─────────── -->
+      <section class="panel" id="s-limit">
+        <div class="panel-head"><h2>한계</h2>
+          <div class="hint">증명한 것과 증명하지 못한 것을 나눠 적습니다</div></div>
+
+        <p class="para"><b>증명한 것.</b> 불량이 웨이퍼 위에서 공간적으로 뭉친다는 사실(이웃이 정상일 때
+          9.01% → 이웃 4개가 불량일 때 87.12%). 고장 모양에 따라 복구 성패가 갈린다는 사실
+          (한 줄 100% vs 덩어리 4.48%, 가정을 바꿔도 순서 유지). 검증 조건을 코드에 심으면
+          합성값이 실측 판정을 훼손하는 것을 잡아낼 수 있다는 사실(275,159건 검출).
+          나누는 방식이 결론을 바꾼다는 사실(같은 데이터에서 2.5배 차이).</p>
+
+        <ol class="limits">
+          <li><b>공정 센서로 불량을 예측하지 못했습니다.</b> 시간 순으로 검증하면 예측력이
+            거의 사라졌고, 7가지 개선 시도로도 오르지 않았습니다. 이 데이터 규모로는
+            확인되지 않는다는 것까지가 결론입니다.</li>
+          <li><b>이상 신호를 원인 장비까지 추적하지 못했습니다.</b> 공개 데이터의 센서는
+            번호로만 표시되어 있습니다. 어느 센서가 언제부터 얼마나 자주 벗어났는지는 찾았지만,
+            그것이 <b>어느 장비의 무슨 물리량인지 알 수 없어</b> 조치로 연결되지 않습니다.
+            정비 이력도 없어 센서 자체가 낡은 것인지 공정이 변한 것인지 구분할 수 없습니다.</li>
+          <li><b>칩 내부 고장 위치는 실측이 아닙니다.</b> 셀 단위 고장 주소는 공개된 자료가 없어
+            물리적으로 타당한 형태로 채워 넣었습니다. 복구 판정 논리는 실제 방식을 따랐지만,
+            복구 가능 비율의 <b>절대값을 인용해서는 안 됩니다.</b> 가장 민감한 가정(고장 모양 분포)에서
+            11.06%p까지 움직입니다.</li>
+          <li><b>칩 단면 사진 분석은 시도하지 못했습니다.</b> 현장에서는 불량 칩을 잘라 단면을 보고
+            어느 층에서 문제가 생겼는지 확인합니다. 공개 자료를 찾아봤지만 쓸 수 있는 것이
+            없었습니다(가장 가까운 공개본이 15장). 소자 구조가 그대로 드러나는 자료라
+            공개되지 않습니다.</li>
+          <li><b>결함의 원인 공정을 자동으로 판정하지 않았습니다.</b> 원인이 표시된 공개 데이터가
+            없기 때문입니다. 대신 결함의 형태를 측정해 논문 근거와 함께 <b>후보만 제시</b>하고,
+            확정은 사람이 하도록 두었습니다. 판정 기록을 쌓는 구조까지만 만들었습니다.</li>
+        </ol>
+
+        <p class="para" style="margin-top:20px">실제 공정 데이터에는 센서마다 물리량과 장비, 정비 이력이
+          연결되어 있습니다. 위 한계의 상당 부분은 그 정보가 있으면 해소됩니다.
+          이상 신호를 원인 장비까지 좁히고, 센서 노후와 공정 변화를 이력으로 구분하는 데까지
+          이어가고 싶습니다.</p>
+      </section>
+
+    </main>
+
+    <footer class="ftr">
+      데이터 출처 · WM-811K (MIR Lab, National Taiwan University) — M.-J. Wu, J.-S. R. Jang, J.-L. Chen,
+      IEEE Trans. Semicond. Manuf., 28(1), 2015 · Carinthia-S (Zenodo, CC BY 4.0, doi:10.5281/zenodo.16895427) ·
+      SECOM (UCI Machine Learning Repository) · 검사 규격은 DDR4 공개 데이터시트 참조.
+      칩 내부 고장 주소와 검사별 측정값은 공개 자료가 없어 가정으로 채운 값입니다.
+    </footer>
+  </div>
+</div>
+</div>
+
+<script src="snowui-shell.js"></script>
+</body>
+</html>

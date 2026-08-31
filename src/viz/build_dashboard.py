@@ -19,6 +19,9 @@ OUT = ROOT / "output" / "dashboard.html"
 # GitHub Pages는 저장소 루트(또는 /docs)의 index.html을 서빙한다.
 # 같은 파일을 루트에도 둬서 https://<user>.github.io/<repo>/ 로 바로 열리게 한다.
 PAGES = ROOT / "index.html"
+# GitHub Pages 소스를 /docs 로 둘 경우 서빙되는 경로. 소개 페이지(docs/index.html)에서
+# "분석 워크벤치 열기"로 이 파일을 연다.
+DOCS_PAGE = ROOT / "docs" / "workbench.html"
 
 
 def main() -> int:
@@ -38,9 +41,12 @@ def main() -> int:
     OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(html, encoding="utf-8")
     PAGES.write_text(html, encoding="utf-8")
+    DOCS_PAGE.parent.mkdir(exist_ok=True)
+    DOCS_PAGE.write_text(html, encoding="utf-8")
     print(f"저장: {OUT.relative_to(ROOT)}  {OUT.stat().st_size:,} B "
           f"({OUT.stat().st_size/1e6:.2f} MB)")
-    print(f"저장: {PAGES.name}  (GitHub Pages용 사본)")
+    print(f"저장: {PAGES.name}  (루트 Pages용 사본)")
+    print(f"저장: docs/{DOCS_PAGE.name}  (docs Pages용 사본)")
     print("외부 CDN·API 없음, 브라우저 저장소 미사용, 다크모드 대응")
     return 0
 
