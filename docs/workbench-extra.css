@@ -1,0 +1,69 @@
+/* 워크벤치 전용 보조 스타일 — SnowUI 토큰만 사용한다.
+   snowui-shell.css 는 건드리지 않는다. 여기서 정의하는 것은
+   분석 화면이 만들어내는 요소들(카드, 막대, 근거 블록 등)뿐이다. */
+
+/* 패널 안에서 내용을 나누는 카드. 테두리 대신 배경 차이로 구분한다. */
+.card{background:var(--surface-sunken);border-radius:var(--radius-16);padding:18px}
+.card + .card{margin-top:12px}
+.card .proc{font-size:14px;font-weight:600;line-height:20px;margin-bottom:6px}
+.card .rat{font-size:13px;line-height:21px;color:var(--ink-40);white-space:pre-line}
+.card .ref{font-size:11.5px;line-height:18px;color:var(--ink-40);word-break:break-word;margin-top:4px}
+.card .note{font-size:12px;line-height:19px;color:var(--warn);margin-top:6px}
+.cand{background:var(--surface-sunken);border-radius:var(--radius-16);padding:16px;margin-bottom:10px}
+.cand .proc{font-size:13.5px;font-weight:600;margin-bottom:5px}
+.cand .rat{font-size:12.5px;line-height:20px;color:var(--ink-40);white-space:pre-line}
+.cand .ref{font-size:11px;line-height:17px;color:var(--ink-40);word-break:break-word;margin-top:3px}
+.cand .note{font-size:11.5px;color:var(--warn);margin-top:5px}
+
+/* 비율 막대 */
+.bar{height:8px;background:var(--ink-10);border-radius:var(--radius-full);overflow:hidden}
+.bar > i{display:block;height:100%;background:var(--accent);border-radius:var(--radius-full)}
+
+/* 상태 색 */
+.ok{color:var(--ok);font-weight:600}
+.bad{color:var(--bad);font-weight:600}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+
+/* 키·값 그리드 (표가 아닌 정의 목록형) */
+.kvgrid{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:13px;line-height:20px}
+.kvgrid > b{font-weight:500;color:var(--ink-40);white-space:nowrap}
+
+/* 안내 박스 */
+.notice{background:var(--fill-blue);color:var(--text-inverse);border-radius:var(--radius-8);
+  padding:12px 14px;font-size:12.5px;line-height:20px;margin-bottom:16px}
+.warnbox{background:var(--warn-fill);color:var(--ink);border-radius:var(--radius-8);
+  padding:12px 14px;font-size:12.5px;line-height:20px;margin-bottom:16px}
+
+/* 데이터 출처 배지 */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.chip{font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:var(--radius-full);white-space:nowrap}
+.chip.real{background:var(--ok-fill);color:var(--ok)}
+.chip.syn{background:var(--warn-fill);color:var(--warn)}
+.chip.look{background:var(--fill-blue);color:var(--text-inverse)}
+
+/* 배치 */
+.grid{display:grid;gap:16px}
+.flex{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.xscroll{overflow-x:auto}
+
+/* 폼 요소 */
+select,input[type=range]{font-family:inherit}
+select{background:var(--surface-panel);color:var(--ink);border:1px solid var(--line);
+  border-radius:var(--radius-8);padding:7px 10px;width:100%;font-size:13px}
+select:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+label.rng{display:block;font-size:12px;color:var(--ink-40);margin-bottom:3px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+button.act{background:var(--accent);color:#fff;border:none;border-radius:var(--radius-8);
+  padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit}
+button.act:hover{filter:brightness(1.08)}
+
+/* 캔버스 */
+canvas{image-rendering:pixelated;border-radius:var(--radius-8);background:var(--surface-sunken);max-width:100%}
+
+/* 표 — SnowUI .kv 와 함께 쓴다 */
+table.kv td:first-child{text-align:left}
+table.kv th{color:var(--ink-40);font-weight:600;font-size:12.5px;text-align:right;
+  padding:6px 8px;border-bottom:1px solid var(--line)}
+table.kv th:first-child{text-align:left}
+
+details > summary{cursor:pointer}
