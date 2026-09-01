@@ -278,3 +278,30 @@ label.rng{font-size:12.5px;margin-bottom:5px}
 .rail-ext .rail-row:hover .ri-ico{opacity:.8}
 
 .rail-foot{font-size:11.5px;padding:16px 12px 4px;opacity:.7}
+
+/* ══ 수직 리듬 — 요소가 서로 붙지 않게 ═══════════════════════════
+   KPI 카드 바로 밑에 본문이 붙어 답답했다. 패널 안 블록 간 간격을 한 번에 준다. */
+.panel > * + *{margin-top:18px}
+.panel-head{margin-top:0}
+.kpi-row{margin-bottom:0}
+.kpi-row + .para,.kpi-row + p{margin-top:22px}
+.fig{margin:20px 0}
+.panel .grid + .grid,.panel .card + .grid,.panel .grid + .card{margin-top:16px}
+table.kv{margin:2px 0}
+.para:last-child{margin-bottom:0}
+
+/* ══ 줄바꿈 ══════════════════════════════════════════════════
+   한글은 어절 단위로 끊긴다. 기본 배치는 줄 끝에 짧은 어절 하나만 남기는 일이
+   잦아("… 전기 검사를 / 거치는데", "… 미리 / 넣어둔") 시선이 튄다.
+   pretty 는 그 고아 어절을 앞줄로 당겨 준다. 지원하지 않는 브라우저는 무시한다. */
+.para,.step p,.turn p,.limits li,.card .rat,.cand .rat,
+.kpi-sub,.hint,.notice,.warnbox,.sub,td,li{
+  text-wrap:pretty;
+  word-break:keep-all;
+  overflow-wrap:break-word;      /* 긴 영문·URL 은 예외적으로 끊는다 */
+}
+h1,h2,h3,h4,.panel-head h2,.kpi-lab,.step b,.turn b{text-wrap:balance}
+
+/* 줄 길이 — 너무 길면 눈이 되돌아올 자리를 잃는다 */
+.para{max-width:70ch}
+.hero .sub{max-width:66ch}
