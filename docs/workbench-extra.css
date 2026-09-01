@@ -246,3 +246,35 @@ label.rng{font-size:12.5px;margin-bottom:5px}
 /* 사이드바 보조 텍스트 — 외부 링크와 각주가 얕아 잘 안 보였다 */
 .rail-ext .rail-row{color:var(--ink-80)}
 .rail-ext .rail-row:hover{color:var(--ink)}
+
+/* ══ 사이드바 — SnowUI 예시에 맞춘 웹앱 형태 ══════════════════════
+   아이콘 + 텍스트, 항목마다 넉넉한 높이, 선택 상태는 배경과 좌측 막대로 표시. */
+.rail{width:252px;padding:18px 12px}
+.rail-brand{gap:11px;padding:8px 10px 4px;font-size:15.5px;letter-spacing:-.012em}
+.rail-dot{width:20px;height:20px;border-radius:6px}
+
+.rail-sec{font-size:11.5px;font-weight:600;letter-spacing:.06em;
+  padding:0 12px 6px;margin-top:20px;opacity:.75}
+.rail-group{gap:1px}
+
+.rail-row{gap:12px;padding:0 12px;min-height:44px;height:auto;border-radius:10px;
+  font-size:14.5px;font-weight:500}
+.rail-txt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ri-ico{width:20px;height:20px;flex:none;opacity:.62}
+.rail-row:hover .ri-ico{opacity:.85}
+.rail-row.on{font-weight:600}
+.rail-row.on .ri-ico{opacity:1;color:var(--accent)}
+
+/* 선택 표시 막대 — 항목이 높아졌으니 위치를 다시 잡는다 */
+.rail-row.on::before{top:50%;transform:translateY(-50%);height:18px;border-radius:0 3px 3px 0}
+
+/* 원래 있던 점 표식은 아이콘으로 대체됐다 */
+.rail-row .ri{display:none}
+
+/* 외부 링크 묶음 — 본 항목과 구분되게 한 단계 낮춘다 */
+.rail-ext{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.rail-ext .rail-row{min-height:36px;font-size:13px;font-weight:400;padding-left:12px}
+.rail-ext .ri-ico{width:15px;height:15px;opacity:.5}
+.rail-ext .rail-row:hover .ri-ico{opacity:.8}
+
+.rail-foot{font-size:11.5px;padding:16px 12px 4px;opacity:.7}

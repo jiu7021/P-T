@@ -28,16 +28,49 @@ OUT = DOCS / "index.html"
 # 레일 항목 ↔ 섹션. 순서가 곧 화면 순서다.
 # (섹션 id, 레일 표기, 원본 템플릿의 탭 id, 레일 그룹)
 SECTIONS = [
-    ("s-overview", "한눈에 보기", None, "개요"),
+    ("s-overview", "한눈에 보기", None, "개요", "overview"),
     # 눌러볼 수 있는 화면을 앞에 둔다. 처음 여는 사람이 바로 만져볼 수 있어야 한다.
-    ("s-eds", "EDS 웨이퍼 테스트", "tE", "직접 판정해보기"),
-    ("s-fa", "FA · SEM 결함 분석", "t2", "직접 판정해보기"),
-    ("s-map", "웨이퍼 맵 패턴", "t1", "직접 판정해보기"),
+    ("s-eds", "EDS 웨이퍼 테스트", "tE", "직접 판정해보기", "chip"),
+    ("s-fa", "FA · SEM 결함 분석", "t2", "직접 판정해보기", "scope"),
+    ("s-map", "웨이퍼 맵 패턴", "t1", "직접 판정해보기", "wafer"),
     # 배경이 되는 공정 데이터 분석은 뒤로 뺀다.
-    ("s-sensor", "공정 센서 관리도", "tS", "공정 데이터 분석"),
-    ("s-feedback", "판정 피드백", "t4", "기록"),
-    ("s-limit", "한계와 근거", "t5", "기록"),
+    ("s-sensor", "공정 센서 관리도", "tS", "공정 데이터 분석", "chart"),
+    ("s-feedback", "판정 피드백", "t4", "기록", "feedback"),
+    ("s-limit", "한계와 근거", "t5", "기록", "note"),
 ]
+
+# 사이드바 아이콘 — 외부 요청 없이 인라인 SVG 로 둔다.
+# 24 격자, 선 굵기 1.6, currentColor. 항목의 성격이 드러나는 최소한의 형태만 그린다.
+ICONS = {
+    # 원형 게이지 — 전체 요약
+    "overview": '<circle cx="12" cy="12" r="8.2"/><path d="M12 3.8v8.2h8.2"/>',
+    # 칩 — 사각형에 다리
+    "chip": ('<rect x="7" y="7" width="10" height="10" rx="1.6"/>'
+             '<path d="M10 4v3M14 4v3M10 17v3M14 17v3M4 10h3M4 14h3M17 10h3M17 14h3"/>'),
+    # 돋보기 — 결함을 들여다본다
+    "scope": '<circle cx="10.8" cy="10.8" r="6.2"/><path d="M15.4 15.4 20 20"/>',
+    # 웨이퍼 — 원판에 노치
+    "wafer": ('<circle cx="12" cy="12" r="8.2"/><path d="M12 3.8 10.4 6.4h3.2z"/>'
+              '<path d="M6.6 15.2h10.8M8 12h8"/>'),
+    # 꺾은선 — 시간에 따른 기록
+    "chart": '<path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3.4-4.2 3.2 2.6L20 7.6"/>',
+    # 말풍선에 체크 — 사람이 판정한 기록
+    "feedback": ('<path d="M20.5 12.4c0 3.9-3.8 7-8.5 7-1 0-2-.15-2.9-.42L4 20.5l1.6-3.6'
+                 'C4.6 15.6 4 14.1 4 12.4c0-3.9 3.8-7 8.5-7s8 3.1 8 7z"/>'
+                 '<path d="m9.4 12.4 2 2 3.6-3.9"/>'),
+    # 문서에 밑줄 — 한계와 근거
+    "note": ('<path d="M6.5 3.6h7.6L18.5 8v12.4H6.5z"/><path d="M14 3.6V8h4.5"/>'
+             '<path d="M9.4 12.6h6M9.4 16h4"/>'),
+    # 외부 링크
+    "ext": '<path d="M9 5h10v10"/><path d="M19 5 6.5 17.5"/>',
+}
+
+
+def icon(name: str) -> str:
+    d = ICONS.get(name, "")
+    return (f'<svg class="ri-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+            f'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" '
+            f'aria-hidden="true">{d}</svg>')
 
 
 def extract_sections(tpl: str) -> dict[str, str]:
@@ -70,15 +103,15 @@ def adapt(html: str) -> str:
 
 def rail(sections) -> str:
     parts, cur = [], None
-    for sid, label, _, group in sections:
+    for sid, label, _, group, ico in sections:
         if group != cur:
             if cur is not None:
                 parts.append("  </nav>")
             parts.append(f'  <div class="rail-sec">{group}</div>')
             parts.append('  <nav class="rail-group">')
             cur = group
-        parts.append(f'    <a class="rail-row" href="#{sid}">'
-                     f'<span class="ri"></span>{label}</a>')
+        parts.append(f'    <a class="rail-row" href="#{sid}">{icon(ico)}'
+                     f'<span class="rail-txt">{label}</span></a>')
     parts.append("  </nav>")
     return "\n".join(parts)
 
@@ -143,13 +176,13 @@ def main() -> int:
     js = js_path.read_text(encoding="utf-8")
     data = DATA.read_text(encoding="utf-8").replace("</script>", "<\\/script>")
     src = extract_sections(tpl)
-    missing = [t for _, _, t, _ in SECTIONS if t and t not in src]
+    missing = [t for _, _, t, _, _ in SECTIONS if t and t not in src]
     if missing:
         print(f"원본 템플릿에서 못 찾은 탭: {missing}", file=sys.stderr)
         return 1
 
     body = [OVERVIEW]
-    for sid, label, tab, _ in SECTIONS:
+    for sid, label, tab, _, _ in SECTIONS:
         if tab is None:
             continue
         inner = adapt(src[tab])
@@ -206,11 +239,11 @@ def main() -> int:
 {rail(SECTIONS)}
 
   <nav class="rail-group rail-ext">
-    <a class="rail-row" href="story.html">프로젝트 설명 ↗</a>
-    <a class="rail-row" href="https://github.com/jiu7021/P-T">저장소 ↗</a>
-    <a class="rail-row" href="http://mirlab.org/dataset/public/">WM-811K 데이터 ↗</a>
-    <a class="rail-row" href="https://doi.org/10.5281/zenodo.16895427">Carinthia-S 데이터 ↗</a>
-    <a class="rail-row" href="https://archive.ics.uci.edu/dataset/179/secom">SECOM 데이터 ↗</a>
+    <a class="rail-row" href="story.html">{icon("ext")}<span class="rail-txt">프로젝트 설명</span></a>
+    <a class="rail-row" href="https://github.com/jiu7021/P-T">{icon("ext")}<span class="rail-txt">저장소</span></a>
+    <a class="rail-row" href="http://mirlab.org/dataset/public/">{icon("ext")}<span class="rail-txt">WM-811K 데이터</span></a>
+    <a class="rail-row" href="https://doi.org/10.5281/zenodo.16895427">{icon("ext")}<span class="rail-txt">Carinthia-S 데이터</span></a>
+    <a class="rail-row" href="https://archive.ics.uci.edu/dataset/179/secom">{icon("ext")}<span class="rail-txt">SECOM 데이터</span></a>
   </nav>
 
   <div class="rail-foot">SnowUI Design System</div>
