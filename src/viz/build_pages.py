@@ -49,6 +49,12 @@ def extract_sections(tpl: str) -> dict[str, str]:
     return out
 
 
+def bump_small_text(html: str) -> str:
+    """인라인으로 박힌 작은 글씨를 키운다. 화면에 그대로 노출되는 값들이다."""
+    return (html.replace("font-size:11.5px", "font-size:12.5px")
+                .replace("font-size:12px", "font-size:13px"))
+
+
 def adapt(html: str) -> str:
     """기존 마크업을 SnowUI 셸 안에서 쓸 수 있게 다듬는다.
 
@@ -59,7 +65,7 @@ def adapt(html: str) -> str:
     html = html.replace('class="panel"', 'class="card"')
     html = html.replace('class="scroll"', 'class="xscroll"')
     html = re.sub(r'<(/?)h3(\s|>)', r'<\1h4\2', html)
-    return html
+    return bump_small_text(html)
 
 
 def rail(sections) -> str:
@@ -163,10 +169,21 @@ def main() -> int:
         "const G_COL = ['#4ca85c', '#f0bf33', '#d93630'];          // 면(막대·캔버스)용\n"
         "const G_TXT = ['var(--grade-good)', 'var(--grade-rep)', 'var(--grade-fail)'];  // 글자용")
     js = js.replace('<b style="color:${G_COL[i]}">', '<b style="color:${G_TXT[i]}">')
+
+    # 인라인으로 박힌 작은 글씨를 키운다. 11.5~12px 회색은 흰 바탕에서 읽기 어렵다.
+    for a, b in (("font-size:11.5px", "font-size:12.5px"),
+                 ("font-size:12px", "font-size:13px"),
+                 ("font-size:12.5px;color:var(--muted)", "font-size:13px;color:var(--muted)")):
+        js = js.replace(a, b)
     js = js.replace('color:${G_COL[gi]};margin-bottom', 'color:${G_TXT[gi]};margin-bottom')
     js = js.replace("const $ = (id) => document.getElementById(id);",
                     "const $ = (id) => document.getElementById(id) "
                     "|| document.createElement('div');  // 없는 요소는 빈 노드로 대체")
+
+    # 캐시 버스터: 파일이 바뀌면 주소도 바뀌어 브라우저가 새로 받는다.
+    # (스타일을 고쳐도 예전 것이 남아 보이는 일을 막는다)
+    ver = int(max((DOCS / f).stat().st_mtime
+                  for f in ("snowui-shell.css", "workbench-extra.css", "snowui-shell.js")))
 
     html = f"""<!doctype html>
 <html lang="ko" data-theme="dark">
@@ -177,8 +194,8 @@ def main() -> int:
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="snowui-shell.css">
-<link rel="stylesheet" href="workbench-extra.css">
+<link rel="stylesheet" href="snowui-shell.css?v={ver}">
+<link rel="stylesheet" href="workbench-extra.css?v={ver}">
 </head>
 <body>
 <div class="shell">
@@ -232,7 +249,7 @@ def main() -> int:
 </div>
 
 <script id="payload" type="application/json">{data}</script>
-<script src="snowui-shell.js"></script>
+<script src="snowui-shell.js?v={ver}"></script>
 <script>
 /* 레일 클릭 폴백 — 키트 파일은 수정하지 않는다.
    키트는 scrollTo({{behavior:'smooth'}}) 로 이동하는데, 부드러운 스크롤이 듣지 않는

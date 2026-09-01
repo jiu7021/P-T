@@ -137,17 +137,9 @@ table.kv td,table.kv th{line-height:1.55}
 .kv .mono,td .mono{color:var(--ink)}
 
 /* 보조 텍스트가 얕아 표 안 숫자가 잘 안 읽힌다(대비 2.9). 다크에서만 조금 올린다. */
-:root[data-theme="dark"]{--muted:rgba(255,255,255,.56)}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){--muted:rgba(255,255,255,.56)}
-}
 
 /* 라이트 테마의 보조 텍스트가 얕다(흰 바탕 대비 2.5). 라이트에서만 진하게 올린다.
    다크 정의를 덮지 않도록 조건을 명시한다. */
-:root[data-theme="light"]{--ink-40:rgba(28,28,28,.58)}
-@media (prefers-color-scheme: light){
-  :root:not([data-theme="dark"]){--ink-40:rgba(28,28,28,.58)}
-}
 :root[data-theme="light"] .mono{color:var(--ink)}
 
 /* 등급 글자색 — 면(막대·캔버스)에 쓰는 색과 분리한다.
@@ -157,3 +149,100 @@ table.kv td,table.kv th{line-height:1.55}
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){--grade-good:#5cbf6d; --grade-rep:#f5c945; --grade-fail:#f2635a}
 }
+
+/* ══════════════════════════════════════════════════════════════
+   타이포 위계와 여백 — SnowUI 예시와 대조해 조정
+   키트 파일은 건드리지 않고 여기서 덮는다.
+   ══════════════════════════════════════════════════════════════ */
+
+/* 섹션 제목이 본문과 같은 14px 이라 위계가 없었다. 한 단계 올린다. */
+.panel-head{margin-bottom:18px;align-items:baseline;gap:12px}
+.panel-head h2{font-size:19px;line-height:28px;font-weight:600;letter-spacing:-0.022em}
+.panel-head .hint{font-size:13px;line-height:20px}
+
+/* 본문 — 14px 는 정보량이 많은 화면에서 답답하다 */
+body{font-size:15px;line-height:24px}
+.para{font-size:15px;line-height:1.8;max-width:74ch;margin:0 0 14px}
+.para + .para{margin-top:0}
+
+/* 패널 안 소제목(원래 h3 → h4 로 내린 것) */
+.panel h4{font-size:15px;line-height:22px;font-weight:600;margin:0 0 10px;letter-spacing:-0.014em}
+.card h4,.cand .proc{font-size:14.5px;line-height:21px}
+
+/* KPI — 값이 주인공이다 */
+.kpi{padding:22px 24px}
+.kpi-lab{font-size:15px;line-height:22px;font-weight:600}
+.kpi-val{font-size:30px;line-height:40px;font-weight:600;letter-spacing:-0.03em;margin:6px 0 4px}
+.kpi-sub{font-size:13px;line-height:19px}
+.kpi-row{gap:16px}
+
+/* 표 — 12.5px 는 숫자를 읽기에 작다 */
+table.kv td,table.kv th{font-size:13.5px;line-height:1.6;padding:8px 10px}
+.kv{font-size:13.5px}
+.kvgrid{font-size:13.5px;line-height:22px;gap:8px 18px}
+
+/* 카드 본문 */
+.card{padding:20px}
+.card .rat,.cand .rat{font-size:13.5px;line-height:1.75}
+.card .ref,.cand .ref{font-size:12px;line-height:1.6}
+.card .note,.cand .note{font-size:12.5px;line-height:1.65}
+
+/* 안내 박스 */
+.notice,.warnbox{font-size:13.5px;line-height:1.72;padding:14px 16px;border-radius:12px}
+
+/* 한계·단계 목록 */
+.limits li{font-size:14.5px;line-height:1.8}
+.step b{font-size:15px;line-height:22px}
+.step p{font-size:13.5px;line-height:1.75}
+.turn{padding:24px}
+.turn b{font-size:15px}
+.turn p{font-size:14.5px;line-height:1.75}
+
+/* 폼 */
+select{font-size:13.5px;padding:9px 11px}
+label.rng{font-size:12.5px;margin-bottom:5px}
+
+/* ── 사이드바 — SnowUI 는 항목마다 여백이 넉넉하고 선택 상태가 뚜렷하다 ── */
+.rail{width:248px;padding:22px 14px}
+.rail-brand{font-size:15px;line-height:22px;padding:6px 10px 2px;gap:10px}
+.rail-dot{width:18px;height:18px}
+.rail-sec{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:none;
+  padding:6px 12px;margin-top:22px;opacity:.9}
+.rail-group{display:flex;flex-direction:column;gap:2px}
+.rail-row{font-size:14.5px;line-height:20px;padding:10px 12px;border-radius:10px;
+  min-height:40px;display:flex;align-items:center;gap:10px;
+  transition:background var(--dur-fast) var(--ease),color var(--dur-fast) var(--ease)}
+.rail-row:hover{background:var(--surface-hover)}
+.rail-row.on{background:var(--surface-selected);font-weight:600}
+.rail-ext .rail-row{font-size:13px;padding:8px 12px;min-height:34px}
+.rail-foot{font-size:12px;padding:14px 12px 0}
+
+/* ── 대비 — 본문 기준 4.5:1 을 목표로 한다 ────────────────────
+   보조 텍스트가 0.58 이면 흰 바탕에서 3.5 밖에 안 나온다. 작은 글씨일수록 진해야 한다. */
+:root{--muted:rgba(28,28,28,.72)}
+:root[data-theme="light"]{--ink-40:rgba(28,28,28,.72); --muted:rgba(28,28,28,.72)}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){--ink-40:rgba(28,28,28,.72); --muted:rgba(28,28,28,.72)}
+}
+:root[data-theme="dark"]{--muted:rgba(255,255,255,.72); --ink-40:rgba(255,255,255,.66)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--muted:rgba(255,255,255,.72); --ink-40:rgba(255,255,255,.66)}
+}
+
+/* 사이드바 각주 — 1.52 로 거의 안 보였다 */
+.rail-foot{color:var(--ink-40)}
+.rail-ext .rail-row{color:var(--ink-80)}
+
+/* 데이터 출처 배지 — tint 위 상태색은 얕다. 진한 쪽으로 내린다. */
+:root[data-theme="light"] .chip.real{color:#146b2b}
+:root[data-theme="light"] .chip.syn{color:#7a5500}
+:root[data-theme="light"] .chip.look{color:#0b4ea2}
+.chip{font-size:12px;padding:4px 11px}
+
+/* 상태 표기 — 작은 글씨에서 원색은 대비가 모자란다 */
+:root[data-theme="light"] .ok{color:#1a7030}
+:root[data-theme="light"] .bad{color:#b3241d}
+
+/* 사이드바 보조 텍스트 — 외부 링크와 각주가 얕아 잘 안 보였다 */
+.rail-ext .rail-row{color:var(--ink-80)}
+.rail-ext .rail-row:hover{color:var(--ink)}
