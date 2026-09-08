@@ -64,8 +64,8 @@ body {
   background: var(--bg-deep);
   color: var(--text-white);
   font-family: var(--font-sans);
-  font-size: 13.5px;
-  line-height: 1.55;
+  font-size: 14.8px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
   min-height: 100vh;
@@ -281,7 +281,7 @@ body::before {
   min-width: 0;
 }
 .profile-name {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-white);
   white-space: nowrap;
@@ -306,8 +306,9 @@ body::before {
 }
 .profile-tag {
   background: rgba(255, 255, 255, 0.04);
-  padding: 1.5px 6px;
+  padding: 2.5px 8px;
   border-radius: 4px;
+  font-size: 11.5px;
 }
 
 /* ═══ Main Viewport & Generous Header ═══ */
@@ -334,20 +335,20 @@ body::before {
   gap: 4px;
 }
 .page-tag {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.8px;
   color: var(--neon-cyan);
   text-transform: uppercase;
 }
 .page-main-title {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 800;
   color: var(--text-white);
   letter-spacing: -0.4px;
 }
 .page-sub-desc {
-  font-size: 13.5px;
+  font-size: 15px;
   color: var(--text-secondary);
   margin-top: 2px;
 }
@@ -363,9 +364,9 @@ body::before {
   gap: 8px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-glass);
-  padding: 6px 14px;
+  padding: 7px 16px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
 }
 .pulse-dot {
@@ -398,14 +399,14 @@ body::before {
 }
 .cockpit-grid-split {
   display: grid;
-  grid-template-columns: 290px minmax(420px, 1.25fr) minmax(360px, 1fr);
+  grid-template-columns: 290px minmax(480px, 1.25fr) minmax(390px, 1fr);
   gap: 22px;
   margin-bottom: 22px;
   align-items: stretch;
 }
 .cockpit-grid-sem {
   display: grid;
-  grid-template-columns: 270px minmax(460px, 1.35fr) minmax(300px, 340px);
+  grid-template-columns: 280px minmax(520px, 1.35fr) minmax(320px, 380px);
   gap: 22px;
   margin-bottom: 22px;
   align-items: stretch;
@@ -445,7 +446,7 @@ body::before {
   flex-shrink: 0;
 }
 .c-card-title {
-  font-size: 14px;
+  font-size: 16.5px;
   font-weight: 700;
   color: var(--text-white);
   letter-spacing: -0.1px;
@@ -455,7 +456,7 @@ body::before {
 }
 .c-card-action {
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 13px;
   padding: 2px 6px;
 }
 
@@ -464,8 +465,8 @@ body::before {
   background: rgba(0, 240, 255, 0.08);
   border: 1px solid rgba(0, 240, 255, 0.25);
   border-radius: 8px;
-  padding: 7px 12px;
-  font-size: 12px;
+  padding: 9px 14px;
+  font-size: 13.5px;
   color: var(--neon-cyan);
   text-align: center;
   margin-top: 12px;
@@ -475,8 +476,8 @@ body::before {
   background: rgba(255, 179, 0, 0.08);
   border: 1px solid rgba(255, 179, 0, 0.25);
   border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 11.5px;
+  padding: 10px 14px;
+  font-size: 13px;
   color: #fde047;
   line-height: 1.5;
   margin-top: 10px;
@@ -499,7 +500,7 @@ body::before {
   flex: 1;
 }
 .gauge-val-big {
-  font-size: 26px;
+  font-size: 32px;
   font-weight: 800;
   color: var(--text-white);
   font-family: var(--font-mono);
@@ -510,7 +511,7 @@ body::before {
   color: var(--neon-cyan);
 }
 .gauge-sub {
-  font-size: 12px;
+  font-size: 13.5px;
   color: var(--text-secondary);
   margin-top: 2px;
 }
@@ -558,8 +559,8 @@ body::before {
   position: relative;
 }
 .wafer-disc-rim {
-  width: 380px;
-  height: 380px;
+  width: 440px;
+  height: 440px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #182234 0%, #0c121d 70%, #070a10 100%);
   border: 4px solid #232f46;
@@ -570,11 +571,17 @@ body::before {
   position: relative;
   overflow: hidden;
 }
-#emap, #wmap, #wcam {
+#emap {
   cursor: crosshair;
   border-radius: 50%;
-  max-width: 360px;
-  max-height: 360px;
+  max-width: 410px;
+  max-height: 410px;
+}
+#wmap, #wcam {
+  cursor: crosshair;
+  border-radius: 50%;
+  max-width: 380px;
+  max-height: 380px;
   image-rendering: pixelated;
 }
 .wafer-legend-row {
@@ -602,12 +609,12 @@ body::before {
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-height: 480px;
+  min-height: 520px;
 }
 .wafer-picker-list {
   flex: 1;
-  height: 440px;
-  max-height: 440px;
+  height: 480px;
+  max-height: 480px;
   overflow-y: scroll; /* Always show track */
   display: flex;
   flex-direction: column;
@@ -616,11 +623,11 @@ body::before {
 }
 .scroll-hint-bar {
   margin-top: 8px;
-  padding: 6px 10px;
+  padding: 8px 12px;
   background: rgba(255, 255, 255, 0.02);
   border-top: 1px solid var(--border-glass);
   border-radius: 0 0 8px 8px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
   display: flex;
   align-items: center;
@@ -656,7 +663,7 @@ body::before {
 }
 .w-row-id {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--text-white);
   white-space: nowrap;
@@ -664,7 +671,7 @@ body::before {
   text-overflow: ellipsis;
 }
 .w-row-badge {
-  font-size: 10.5px;
+  font-size: 12px;
   padding: 2px 7px;
   border-radius: 999px;
   font-weight: 600;
@@ -676,7 +683,7 @@ body::before {
 table.cockpit-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12.5px;
+  font-size: 13.5px;
 }
 table.cockpit-table th {
   text-align: left;
@@ -713,7 +720,7 @@ table.cockpit-table tr:last-child td {
   border-radius: 999px;
   background: linear-gradient(90deg, var(--neon-cyan), var(--neon-blue)) !important;
 }
-.kv { display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; font-size: 12.5px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13.8px; }
 .kv b { color: var(--text-muted); font-weight: 600; }
 .cand {
   border: 1px solid var(--border-glass);
@@ -722,9 +729,9 @@ table.cockpit-table tr:last-child td {
   padding: 10px 12px;
   margin-bottom: 8px;
 }
-.cand .proc { font-weight: 700; font-size: 13px; color: var(--neon-cyan); }
-.cand .rat { font-size: 12px; margin: 4px 0; color: var(--text-secondary); }
-.cand .ref { font-size: 11px; color: var(--text-muted); word-break: break-word; }
+.cand .proc { font-weight: 700; font-size: 14.5px; color: var(--neon-cyan); }
+.cand .rat { font-size: 13.5px; margin: 5px 0; color: var(--text-secondary); }
+.cand .ref { font-size: 12px; color: var(--text-muted); word-break: break-word; }
 .cand .note { font-size: 11px; color: var(--neon-amber); margin-top: 4px; }
 </style>
 </head>
@@ -894,17 +901,17 @@ table.cockpit-table tr:last-child td {
           </div>
           <div style="display:flex;gap:14px;margin:8px 0 14px">
             <div style="flex:1;background:rgba(0,240,255,0.06);padding:12px;border-radius:12px;border:1px solid rgba(0,240,255,0.15)">
-              <div style="font-size:11.5px;color:var(--text-secondary)">불량 중 복구 가능</div>
-              <div style="font-size:22px;font-weight:800;color:var(--neon-cyan);margin-top:2px" class="mono">53.6%</div>
-              <div style="font-size:11px;color:var(--text-muted);margin-top:2px">490,546개 불량 칩 기준</div>
+              <div style="font-size:13px;color:var(--text-secondary)">불량 중 복구 가능</div>
+              <div style="font-size:26px;font-weight:800;color:var(--neon-cyan);margin-top:2px" class="mono">53.6%</div>
+              <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px">490,546개 불량 칩 기준</div>
             </div>
             <div style="flex:1;background:rgba(255,51,102,0.06);padding:12px;border-radius:12px;border:1px solid rgba(255,51,102,0.15)">
-              <div style="font-size:11.5px;color:var(--text-secondary)">검증이 잡아낸 오류</div>
-              <div style="font-size:22px;font-weight:800;color:var(--neon-rose);margin-top:2px" class="mono">275,159</div>
-              <div style="font-size:11px;color:var(--text-muted);margin-top:2px">뒤집힌 판정 건수</div>
+              <div style="font-size:13px;color:var(--text-secondary)">검증이 잡아낸 오류</div>
+              <div style="font-size:26px;font-weight:800;color:var(--neon-rose);margin-top:2px" class="mono">275,159</div>
+              <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px">뒤집힌 판정 건수</div>
             </div>
           </div>
-          <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.6">
+          <p style="font-size:14px;color:var(--text-secondary);line-height:1.65">
             무작위 분할 대신 <b>시간 순 엄격 검증</b>을 적용했습니다. p 값이 0.010에서 0.155로 전환되며 데이터 누수로 인한 가짜 유의성을 성공적으로 걸러냈습니다.
           </p>
         </div>
@@ -919,22 +926,22 @@ table.cockpit-table tr:last-child td {
             <div style="display:flex;gap:10px;align-items:center;background:rgba(255,255,255,0.03);padding:9px 12px;border-radius:10px">
               <span style="width:8px;height:8px;border-radius:50%;background:var(--neon-green)"></span>
               <div style="flex:1">
-                <div style="font-size:12.5px;font-weight:600">웨이퍼 맵 (WM-811K)</div>
-                <div style="font-size:11px;color:var(--text-muted)">대만국립대 실측 웨이퍼 2,000장 전수 판정</div>
+                <div style="font-size:14px;font-weight:600">웨이퍼 맵 (WM-811K)</div>
+                <div style="font-size:12.5px;color:var(--text-muted)">대만국립대 실측 웨이퍼 2,000장 전수 판정</div>
               </div>
             </div>
             <div style="display:flex;gap:10px;align-items:center;background:rgba(255,255,255,0.03);padding:9px 12px;border-radius:10px">
               <span style="width:8px;height:8px;border-radius:50%;background:var(--neon-cyan)"></span>
               <div style="flex:1">
-                <div style="font-size:12.5px;font-weight:600">SEM 전자현미경 (Carinthia-S)</div>
-                <div style="font-size:11px;color:var(--text-muted)">오스트리아 반도체 고해상도 결함 이미지</div>
+                <div style="font-size:14px;font-weight:600">SEM 전자현미경 (Carinthia-S)</div>
+                <div style="font-size:12.5px;color:var(--text-muted)">오스트리아 반도체 고해상도 결함 이미지</div>
               </div>
             </div>
             <div style="display:flex;gap:10px;align-items:center;background:rgba(255,255,255,0.03);padding:9px 12px;border-radius:10px">
               <span style="width:8px;height:8px;border-radius:50%;background:var(--neon-amber)"></span>
               <div style="flex:1">
-                <div style="font-size:12.5px;font-weight:600">공정 센서 관리도 (SECOM)</div>
-                <div style="font-size:11px;color:var(--text-muted)">실제 Fab 라인 89일간 590개 센서 시계열</div>
+                <div style="font-size:14px;font-weight:600">공정 센서 관리도 (SECOM)</div>
+                <div style="font-size:12.5px;color:var(--text-muted)">실제 Fab 라인 89일간 590개 센서 시계열</div>
               </div>
             </div>
           </div>
@@ -981,15 +988,15 @@ table.cockpit-table tr:last-child td {
           <div style="display:flex;gap:12px;margin:8px 0 10px">
             <div style="flex:1;background:rgba(255,255,255,0.03);padding:10px;border-radius:10px;text-align:center">
               <div style="font-size:11px;color:var(--text-secondary)">감시 센서</div>
-              <div style="font-size:18px;font-weight:700;color:var(--text-white);margin-top:2px" class="mono">590개</div>
+              <div style="font-size:22px;font-weight:700;color:var(--text-white);margin-top:2px" class="mono">590개</div>
             </div>
             <div style="flex:1;background:rgba(255,179,0,0.06);padding:10px;border-radius:10px;text-align:center;border:1px solid rgba(255,179,0,0.2)">
               <div style="font-size:11px;color:var(--neon-amber)">3σ 이탈 감지</div>
-              <div style="font-size:18px;font-weight:700;color:var(--neon-amber);margin-top:2px" class="mono">2개 센서</div>
+              <div style="font-size:22px;font-weight:700;color:var(--neon-amber);margin-top:2px" class="mono">2개 센서</div>
             </div>
             <div style="flex:1;background:rgba(255,51,102,0.06);padding:10px;border-radius:10px;text-align:center;border:1px solid rgba(255,51,102,0.2)">
               <div style="font-size:11px;color:var(--neon-rose)">월별 불량 변동</div>
-              <div style="font-size:18px;font-weight:700;color:var(--neon-rose);margin-top:2px" class="mono">8배 Drift</div>
+              <div style="font-size:22px;font-weight:700;color:var(--neon-rose);margin-top:2px" class="mono">8배 Drift</div>
             </div>
           </div>
           <p style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin:0">
@@ -1033,7 +1040,7 @@ table.cockpit-table tr:last-child td {
         <div class="c-card">
           <div class="c-card-head">
             <span class="c-card-title">웨이퍼 선택</span>
-            <span id="ecount" style="font-size:11px;color:var(--text-muted)"></span>
+            <span id="ecount" style="font-size:12.5px;color:var(--text-muted)"></span>
           </div>
           <select id="esel" style="display:none"></select>
           <div class="wafer-picker-container">
@@ -1054,7 +1061,7 @@ table.cockpit-table tr:last-child td {
           
           <div class="wafer-hero-stand">
             <div class="wafer-disc-rim">
-              <canvas id="emap" width="360" height="360"></canvas>
+              <canvas id="emap" width="410" height="410"></canvas>
             </div>
           </div>
 
@@ -1105,12 +1112,12 @@ table.cockpit-table tr:last-child td {
             </div>
           </div>
           <div>
-            <div style="font-size:12.5px;font-weight:600;margin-bottom:8px">Fail Address 주소 목록 (합성 데이터)</div>
+            <div style="font-size:14px;font-weight:600;margin-bottom:8px">Fail Address 주소 목록 (합성 데이터)</div>
             <div style="max-height:360px;overflow-y:auto;background:rgba(0,0,0,0.25);border-radius:8px;padding:6px">
               <table class="cockpit-table mono"><thead><tr><th>X (행)</th><th>Y (열)</th></tr></thead><tbody id="echiptbl"></tbody></table>
             </div>
           </div>
-          <div id="echipnote" style="font-size:12.5px;line-height:1.7"></div>
+          <div id="echipnote" style="font-size:13.8px;line-height:1.75"></div>
         </div>
       </div>
 
@@ -1156,7 +1163,7 @@ table.cockpit-table tr:last-child td {
         <div class="c-card">
           <div class="c-card-head">
             <span class="c-card-title">SEM 결함 이미지</span>
-            <span id="scount" style="font-size:11px;color:var(--text-muted)"></span>
+            <span id="scount" style="font-size:12.5px;color:var(--text-muted)"></span>
           </div>
           <select id="ssel" style="display:none"></select>
           <div class="wafer-picker-container">
@@ -1184,7 +1191,7 @@ table.cockpit-table tr:last-child td {
             </div>
           </div>
           <div style="display:flex;justify-content:center;background:#05070a;border-radius:12px;padding:12px;border:1px solid var(--border-glass)">
-            <canvas id="sbig" width="420" height="420" style="width:100%;max-width:420px;border-radius:8px"></canvas>
+            <canvas id="sbig" width="480" height="480" style="width:100%;max-width:480px;border-radius:8px"></canvas>
           </div>
           <div id="sinfo" style="margin-top:14px"></div>
         </div>
@@ -1193,7 +1200,7 @@ table.cockpit-table tr:last-child td {
         <div class="c-card">
           <div class="c-card-head">
             <span class="c-card-title">원인 공정 후보</span>
-            <span class="c-card-action" style="font-size:11px;color:var(--text-muted)">문헌 룩업</span>
+            <span class="c-card-action" style="font-size:12.5px;color:var(--text-muted)">문헌 룩업</span>
           </div>
           <div id="scand" style="max-height:520px;overflow-y:auto;padding-right:4px"></div>
         </div>
@@ -1206,7 +1213,7 @@ table.cockpit-table tr:last-child td {
         <div class="c-card">
           <div class="c-card-head">
             <span class="c-card-title">웨이퍼 선택</span>
-            <span id="wcount" style="font-size:11px;color:var(--text-muted)"></span>
+            <span id="wcount" style="font-size:12.5px;color:var(--text-muted)"></span>
           </div>
           <select id="wsel" style="display:none"></select>
           <div class="wafer-picker-container">
@@ -1224,11 +1231,11 @@ table.cockpit-table tr:last-child td {
           </div>
           <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap">
             <div style="text-align:center">
-              <canvas id="wmap" width="320" height="320" style="border-radius:50%;background:#090d14;border:3px solid #232f46"></canvas>
+              <canvas id="wmap" width="380" height="380" style="border-radius:50%;background:#090d14;border:3px solid #232f46"></canvas>
               <div style="font-size:11.5px;color:var(--text-muted);margin-top:8px">원본 다이 합불 분포</div>
             </div>
             <div style="text-align:center">
-              <canvas id="wcam" width="320" height="320" style="border-radius:50%;background:#090d14;border:3px solid #232f46"></canvas>
+              <canvas id="wcam" width="380" height="380" style="border-radius:50%;background:#090d14;border:3px solid #232f46"></canvas>
               <div style="font-size:11.5px;color:var(--text-muted);margin-top:8px">Grad-CAM 근거 열지도 (붉을수록 기여)</div>
             </div>
           </div>
@@ -1260,18 +1267,18 @@ table.cockpit-table tr:last-child td {
           <div>
             <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">센서 선택</div>
             <select id="dr_sel" style="display:none"></select>
-            <div class="wafer-picker-container" style="min-height:300px">
-              <div class="wafer-picker-list" id="custom-sensor-list" style="height:270px;max-height:270px"></div>
+            <div class="wafer-picker-container" style="min-height:360px">
+              <div class="wafer-picker-list" id="custom-sensor-list" style="height:340px;max-height:340px"></div>
               <div class="scroll-hint-bar">
                 <span>↕ 마우스 휠로 센서 스크롤</span>
                 <span>590 SENSORS</span>
               </div>
             </div>
-            <div id="dr_kinds" style="font-size:12px;color:var(--text-muted);margin-top:8px"></div>
+            <div id="dr_kinds" style="font-size:13px;color:var(--text-muted);margin-top:8px"></div>
           </div>
           <div>
             <div style="background:#05070a;border-radius:12px;padding:12px;border:1px solid var(--border-glass)">
-              <canvas id="dr_chart" width="720" height="270" style="width:100%"></canvas>
+              <canvas id="dr_chart" width="880" height="340" style="width:100%"></canvas>
             </div>
             <div id="dr_info" style="margin-top:12px"></div>
           </div>
@@ -1307,7 +1314,7 @@ table.cockpit-table tr:last-child td {
         <div class="c-card">
           <div class="c-card-head"><span class="c-card-title">모델 성능 지표</span></div>
           <div id="perf"></div>
-          <div id="gen" style="font-size:11px;color:var(--text-muted);margin-top:14px"></div>
+          <div id="gen" style="font-size:12.5px;color:var(--text-muted);margin-top:14px"></div>
         </div>
       </div>
     </section>
@@ -1712,8 +1719,8 @@ $('emap').onclick = (ev) => {
   }
 
   $('einfo').innerHTML = `
-    <div style="font-size:16px;font-weight:700;color:${G_TXT[gi]};margin-bottom:2px">${G_NAME[gi]}</div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">${G_KO[gi]}</div>
+    <div style="font-size:18px;font-weight:700;color:${G_TXT[gi]};margin-bottom:2px">${G_NAME[gi]}</div>
+    <div style="font-size:14.5px;color:var(--muted);margin-bottom:10px">${G_KO[gi]}</div>
     <div class="kv" style="margin-bottom:10px">
       <b>좌표</b><span class="mono">(${mx}, ${my})</span>
       <b>실데이터 판정</b><span>${w.grade[k] === 0 ? '정상 다이' : '불량 다이'}
@@ -1722,7 +1729,7 @@ $('emap').onclick = (ev) => {
     <table style="margin-bottom:10px">
       <tr><th>시험</th><th>측정값</th><th>규격</th><th></th></tr>${rowsHtml}
     </table>
-    <div style="font-size:12.5px;line-height:1.7">${reason}</div>
+    <div style="font-size:13.8px;line-height:1.75">${reason}</div>
     <p style="font-size:13px;color:var(--muted);margin-top:10px">
       측정값과 fail bit 주소는 합성입니다. 이 다이가 불량인지 아닌지는 실데이터가 정했고,
       합성은 <b>왜 불량인지</b>만 만듭니다.</p>`;
@@ -1857,7 +1864,7 @@ function drawChip(mode, nbits, gi, ur, uc, dx, dy, isCell) {
     </div>
     <div style="font-size:12.5px;margin-bottom:8px">
       <b style="color:var(--muted)">판정 이유</b> ${rep.reason}</div>
-    <details><summary style="cursor:pointer;font-size:12.5px;font-weight:600">배정 과정 보기 (${rep.steps.length}단계)</summary>
+    <details><summary style="cursor:pointer;font-size:14px;font-weight:600">배정 과정 보기 (${rep.steps.length}단계)</summary>
       <ol class="mono" style="font-size:12.5px;padding-left:20px;margin:6px 0 0">
         ${rep.steps.slice(0, 12).map(x => `<li>${x}</li>`).join('')}
         ${rep.steps.length > 12 ? `<li>… 외 ${rep.steps.length - 12}단계</li>` : ''}</ol></details>
@@ -2337,7 +2344,7 @@ function drawCtrl(i) {
   // 축
   g.strokeStyle = css('--border'); g.lineWidth = 1;
   g.beginPath(); g.moveTo(L, T); g.lineTo(L, H - B); g.lineTo(W - R, H - B); g.stroke();
-  g.fillStyle = css('--muted'); g.font = '10px ui-monospace, monospace';
+  g.fillStyle = css('--muted'); g.font = '12px JetBrains Mono, monospace';
   g.textAlign = 'right';
   for (const val of [lo + pad, sr.mu, hi - pad]) {
     g.fillText(val.toPrecision(3), L - 5, Y(val) + 3);
@@ -2446,12 +2453,12 @@ function drawCtrl(i) {
   const origDrawEds = window.drawEds;
   window.drawEds = function(i) {
     eCur = i;
-    const w = E.wafers[i], S = 360;
+    const w = E.wafers[i], S = 410;
     $('etitle').textContent = `${w.wafer_id} · ${PAT_KO[w.pattern] || w.pattern}`;
     const c = $('emap'), g = c.getContext('2d');
     
     // Scale X and Y independently to form a perfect circular wafer of diameter D
-    const D = 322;
+    const D = 376;
     const px = D / w.w;
     const py = D / w.h;
     const ox = Math.floor((S - D) / 2);
@@ -2538,8 +2545,8 @@ function drawCtrl(i) {
     }
 
     $('einfo').innerHTML = `
-      <div style="font-size:16px;font-weight:700;color:${G_TXT[gi]};margin-bottom:2px">${G_NAME[gi]}</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:10px">${G_KO[gi]}</div>
+      <div style="font-size:18px;font-weight:700;color:${G_TXT[gi]};margin-bottom:2px">${G_NAME[gi]}</div>
+      <div style="font-size:14.5px;color:var(--muted);margin-bottom:10px">${G_KO[gi]}</div>
       <div class="kv" style="margin-bottom:10px">
         <b>좌표</b><span class="mono">(${mx_found}, ${my_found})</span>
         <b>실데이터 판정</b><span>${w.grade[k] === 0 ? '정상 다이' : '불량 다이'}
@@ -2548,7 +2555,7 @@ function drawCtrl(i) {
       <table style="margin-bottom:10px">
         <tr><th>시험</th><th>측정값</th><th>규격</th><th></th></tr>${rowsHtml}
       </table>
-      <div style="font-size:12.5px;line-height:1.7">${reason}</div>`;
+      <div style="font-size:13.8px;line-height:1.75">${reason}</div>`;
 
     drawChip(mode, w.nbits[k], gi, w.ur[k], w.uc[k], mx_found, my_found, isCell);
   };
@@ -2557,8 +2564,8 @@ function drawCtrl(i) {
   const origDrawWafer = window.drawWafer;
   window.drawWafer = function(i) {
     origDrawWafer(i);
-    const w = W[i], S = 320;
-    const D = 286;
+    const w = W[i], S = 380;
+    const D = 346;
     const px = D / w.w;
     const py = D / w.h;
     const ox = Math.floor((S - D) / 2);
