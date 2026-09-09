@@ -64,8 +64,8 @@ body {
   background: var(--bg-deep);
   color: var(--text-white);
   font-family: var(--font-sans);
-  font-size: 15.5px;
-  line-height: 1.65;
+  font-size: 16px;
+  line-height: 1.68;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
   min-height: 100vh;
@@ -106,11 +106,12 @@ body::before {
   min-height: 100vh;
   position: relative;
   z-index: 1;
+  zoom: 1.14;
 }
 
 /* ═══ Wide Dark Sidebar (280px, Profile Card Included) ═══ */
 .cockpit-sidebar {
-  width: 295px;
+  width: 310px;
   background: rgba(11, 15, 23, 0.94);
   border-right: 1px solid var(--border-glass);
   backdrop-filter: blur(24px);
@@ -281,7 +282,7 @@ body::before {
   min-width: 0;
 }
 .profile-name {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--text-white);
   white-space: nowrap;
@@ -342,13 +343,13 @@ body::before {
   text-transform: uppercase;
 }
 .page-main-title {
-  font-size: 32px;
+  font-size: 34px;
   font-weight: 800;
   color: var(--text-white);
   letter-spacing: -0.4px;
 }
 .page-sub-desc {
-  font-size: 16px;
+  font-size: 16.5px;
   color: var(--text-secondary);
   margin-top: 2px;
 }
@@ -446,7 +447,7 @@ body::before {
   flex-shrink: 0;
 }
 .c-card-title {
-  font-size: 18px;
+  font-size: 19.5px;
   font-weight: 700;
   color: var(--text-white);
   letter-spacing: -0.1px;
@@ -456,7 +457,7 @@ body::before {
 }
 .c-card-action {
   color: var(--text-muted);
-  font-size: 13.5px;
+  font-size: 14px;
   padding: 2px 6px;
 }
 
@@ -465,8 +466,8 @@ body::before {
   background: rgba(0, 240, 255, 0.08);
   border: 1px solid rgba(0, 240, 255, 0.25);
   border-radius: 8px;
-  padding: 11px 16px;
-  font-size: 14.5px;
+  padding: 12px 18px;
+  font-size: 15px;
   color: var(--neon-cyan);
   text-align: center;
   margin-top: 12px;
@@ -476,8 +477,8 @@ body::before {
   background: rgba(255, 179, 0, 0.08);
   border: 1px solid rgba(255, 179, 0, 0.25);
   border-radius: 8px;
-  padding: 11px 16px;
-  font-size: 13.5px;
+  padding: 12px 18px;
+  font-size: 14px;
   color: #fde047;
   line-height: 1.5;
   margin-top: 10px;
@@ -500,7 +501,7 @@ body::before {
   flex: 1;
 }
 .gauge-val-big {
-  font-size: 36px;
+  font-size: 40px;
   font-weight: 800;
   color: var(--text-white);
   font-family: var(--font-mono);
@@ -511,7 +512,7 @@ body::before {
   color: var(--neon-cyan);
 }
 .gauge-sub {
-  font-size: 14.5px;
+  font-size: 15px;
   color: var(--text-secondary);
   margin-top: 2px;
 }
@@ -559,8 +560,8 @@ body::before {
   position: relative;
 }
 .wafer-disc-rim {
-  width: 470px;
-  height: 470px;
+  width: 500px;
+  height: 500px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #182234 0%, #0c121d 70%, #070a10 100%);
   border: 4px solid #232f46;
@@ -574,14 +575,14 @@ body::before {
 #emap {
   cursor: crosshair;
   border-radius: 50%;
-  max-width: 440px;
-  max-height: 440px;
+  max-width: 470px;
+  max-height: 470px;
 }
 #wmap, #wcam {
   cursor: crosshair;
   border-radius: 50%;
-  max-width: 410px;
-  max-height: 410px;
+  max-width: 440px;
+  max-height: 440px;
   image-rendering: pixelated;
 }
 .wafer-legend-row {
@@ -663,7 +664,7 @@ body::before {
 }
 .w-row-id {
   font-family: var(--font-mono);
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-white);
   white-space: nowrap;
@@ -671,7 +672,7 @@ body::before {
   text-overflow: ellipsis;
 }
 .w-row-badge {
-  font-size: 13px;
+  font-size: 13.5px;
   padding: 2px 7px;
   border-radius: 999px;
   font-weight: 600;
@@ -683,7 +684,7 @@ body::before {
 table.cockpit-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14.5px;
+  font-size: 15px;
 }
 table.cockpit-table th {
   text-align: left;
@@ -1061,7 +1062,7 @@ table.cockpit-table tr:last-child td {
           
           <div class="wafer-hero-stand">
             <div class="wafer-disc-rim">
-              <canvas id="emap" width="440" height="440"></canvas>
+              <canvas id="emap" width="470" height="470"></canvas>
             </div>
           </div>
 
@@ -1191,7 +1192,7 @@ table.cockpit-table tr:last-child td {
             </div>
           </div>
           <div style="display:flex;justify-content:center;background:#05070a;border-radius:12px;padding:12px;border:1px solid var(--border-glass)">
-            <canvas id="sbig" width="520" height="520" style="width:100%;max-width:520px;border-radius:8px"></canvas>
+            <canvas id="sbig" width="560" height="560" style="width:100%;max-width:560px;border-radius:8px"></canvas>
           </div>
           <div id="sinfo" style="margin-top:14px"></div>
         </div>
@@ -1231,11 +1232,11 @@ table.cockpit-table tr:last-child td {
           </div>
           <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap">
             <div style="text-align:center">
-              <canvas id="wmap" width="410" height="410" style="border-radius:50%;background:#090d14;border:3px solid #232f46"></canvas>
+              <canvas id="wmap" width="440" height="440" style="border-radius:50%;background:#090d14;border:3px solid #232f46"></canvas>
               <div style="font-size:13.5px;color:var(--text-muted);margin-top:8px">원본 다이 합불 분포</div>
             </div>
             <div style="text-align:center">
-              <canvas id="wcam" width="410" height="410" style="border-radius:50%;background:#090d14;border:3px solid #232f46"></canvas>
+              <canvas id="wcam" width="440" height="440" style="border-radius:50%;background:#090d14;border:3px solid #232f46"></canvas>
               <div style="font-size:13.5px;color:var(--text-muted);margin-top:8px">Grad-CAM 근거 열지도 (붉을수록 기여)</div>
             </div>
           </div>
@@ -1278,7 +1279,7 @@ table.cockpit-table tr:last-child td {
           </div>
           <div>
             <div style="background:#05070a;border-radius:12px;padding:12px;border:1px solid var(--border-glass)">
-              <canvas id="dr_chart" width="880" height="340" style="width:100%"></canvas>
+              <canvas id="dr_chart" width="960" height="380" style="width:100%"></canvas>
             </div>
             <div id="dr_info" style="margin-top:12px"></div>
           </div>
@@ -2453,12 +2454,12 @@ function drawCtrl(i) {
   const origDrawEds = window.drawEds;
   window.drawEds = function(i) {
     eCur = i;
-    const w = E.wafers[i], S = 440;
+    const w = E.wafers[i], S = 470;
     $('etitle').textContent = `${w.wafer_id} · ${PAT_KO[w.pattern] || w.pattern}`;
     const c = $('emap'), g = c.getContext('2d');
     
     // Scale X and Y independently to form a perfect circular wafer of diameter D
-    const D = 404;
+    const D = 432;
     const px = D / w.w;
     const py = D / w.h;
     const ox = Math.floor((S - D) / 2);
@@ -2564,8 +2565,8 @@ function drawCtrl(i) {
   const origDrawWafer = window.drawWafer;
   window.drawWafer = function(i) {
     origDrawWafer(i);
-    const w = W[i], S = 410;
-    const D = 374;
+    const w = W[i], S = 440;
+    const D = 402;
     const px = D / w.w;
     const py = D / w.h;
     const ox = Math.floor((S - D) / 2);
