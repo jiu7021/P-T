@@ -787,27 +787,35 @@ table.cockpit-table tr:last-child td {
         <span class="nav-btn-badge">2.13M</span>
       </button>
 
-      <button class="nav-btn" data-target="s-fa">
-        <span class="nav-btn-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        </span>
-        <span>2. FA · SEM 결함 리뷰</span>
-        <span class="nav-btn-badge">실측</span>
-      </button>
-
       <button class="nav-btn" data-target="s-map">
         <span class="nav-btn-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>
         </span>
-        <span>3. WM-811K 패턴 인식</span>
+        <span>2. EDS 공간 불량패턴 인식</span>
         <span class="nav-btn-badge">8대 패턴</span>
+      </button>
+
+      <button class="nav-btn" data-target="s-agent">
+        <span class="nav-btn-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </span>
+        <span>3. EDS 적응형 테스트 (Adaptive Test)</span>
+        <span class="nav-btn-badge">Active</span>
+      </button>
+
+      <button class="nav-btn" data-target="s-fa">
+        <span class="nav-btn-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </span>
+        <span>4. FA 물리적 결함 분석</span>
+        <span class="nav-btn-badge">실측</span>
       </button>
 
       <button class="nav-btn" data-target="s-sensor">
         <span class="nav-btn-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
         </span>
-        <span>4. 공정 센서 SPC</span>
+        <span>5. FDC 공정 설비 이상 감지</span>
         <span class="nav-btn-badge">SECOM</span>
       </button>
 
@@ -815,7 +823,7 @@ table.cockpit-table tr:last-child td {
         <span class="nav-btn-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         </span>
-        <span>5. 판정 피드백 &amp; 한계</span>
+        <span>6. 판정 피드백 &amp; 한계</span>
       </button>
     </nav>
 
@@ -1320,6 +1328,12 @@ table.cockpit-table tr:last-child td {
       </div>
     </section>
 
+  
+    <section class="tab-pane" id="s-agent">
+      <div style="width: 100%; border-radius: 12px; overflow: hidden; height: auto;">
+        <iframe src="eds_minesweeper_preview.html" style="width: 100%; height: 800px; border: none; display: block;"></iframe>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -1329,6 +1343,12 @@ table.cockpit-table tr:last-child td {
 <!-- Cockpit Navigation Controller -->
 <script>
 const PAGE_META = {
+  's-agent': {
+    tag: 'ACTIVE LEARNING PROBER',
+    title: '3. EDS 적응형 테스트 (Adaptive Test)',
+    desc: 'WM-811K의 9가지 수율 패턴을 실시간으로 추론하며 베이지안 갱신을 통해 프로브 이동 경로를 자율 결정합니다.',
+    status: 'AI Agent Standby'
+  },
   's-overview': {
     tag: 'DASHBOARD OVERVIEW',
     title: '한눈에 보기',
@@ -1343,19 +1363,19 @@ const PAGE_META = {
   },
   's-fa': {
     tag: 'ELECTRON DEFECT REVIEW',
-    title: '2. FA · SEM 결함 리뷰',
+    title: '4. FA 물리적 결함 분석',
     desc: 'Carinthia-S 고해상도 전자현미경 결함 위치 관측 및 문헌 기반 원인 공정 룩업 분석입니다.',
     status: 'SEM 결함 실측 데이터 연동 중'
   },
   's-map': {
     tag: 'SPATIAL DEFECT PATTERNS',
-    title: '3. WM-811K 패턴 인식',
+    title: '2. EDS 공간 불량패턴 인식',
     desc: '8대 공간 결함 패턴 CNN 신경망 분류 및 Grad-CAM 판단 근거 영역 가시화입니다.',
     status: 'CNN 8대 패턴 추론 모듈 활성'
   },
   's-sensor': {
     tag: 'PROCESS SPC CONTROL',
-    title: '4. 공정 센서 SPC',
+    title: '5. FDC 공정 설비 이상 감지',
     desc: '실제 89일간 수집된 UCI SECOM 590개 센서 시계열 및 ±3σ 관리한계 이탈 추적입니다.',
     status: 'SECOM 590개 센서 모니터링 중'
   },
