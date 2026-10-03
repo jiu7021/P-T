@@ -481,7 +481,6 @@
 
   
   // [TypeSafe Jev (System One AI) 기하학적 확장 엔진]
-  // 발견된 결함을 기반으로 가능한 모든 기하학적 패턴(선, 원, 군집)을 추론하여 Bounding Box를 넓게 잡습니다.
   function pseudoJevInference(defects, waferData) {
      if (defects.length === 0) return { pattern: 'none', toTest: [] };
      
@@ -497,7 +496,6 @@
         possiblePatterns.loc++;
      });
      
-     // 가장 투표를 많이 받은 패턴을 메인으로 삼되, 안전을 위해 기하학적 범위를 모두 Box에 넣음
      let maxVotes = 0;
      let bestPattern = 'random';
      for(let k in possiblePatterns) {
@@ -511,14 +509,10 @@
            let dist = Math.sqrt(Math.pow(r - center + 0.5, 2) + Math.pow(c - center + 0.5, 2));
            let add = false;
            
-           // 발견된 결함이 도넛 반경에 있으면 전체 도넛 반경을 의심 영역으로 추가
            if (possiblePatterns.donut > 0 && dist >= 3.5 && dist <= 9.0) add = true;
-           // 발견된 결함이 대각선에 있으면 전체 대각선을 의심 영역으로 추가
            if (possiblePatterns.scratch > 0 && (Math.abs(r - c) <= 2 || Math.abs(r - (SIZE - c)) <= 2)) add = true;
-           // 발견된 결함이 중앙에 있으면 중앙 전체를 의심 영역으로 추가
            if (possiblePatterns.center > 0 && dist <= 5.5) add = true;
            
-           // 국지적 군집 (모든 발견된 결함 주변 3x3은 무조건 추가)
            if (!add) {
               for(let d of defects) {
                  if (Math.abs(d.r - r) <= 3 && Math.abs(d.c - c) <= 3) { add = true; break; }
@@ -533,7 +527,6 @@
   }
 
   async function startSimulation() {
-
     if (isSimulating) return;
     initWaferUI();
     isSimulating = true;
@@ -586,12 +579,11 @@
         return;
     }
 
-    
     if (currentEngine === 'jev') {
       log(`[TypeSafe Jev] System One 초고속 공간 인지 가동`, 'info');
       
       let defects = [];
-      let maxSampleRate = currentMode === 'strict' ? 0.25 : 0.05; // Strict mode samples up to 25% if nothing found
+      let maxSampleRate = currentMode === 'strict' ? 0.25 : 0.05;
       
       while(testCount / validDies < maxSampleRate) {
          let r, c;
@@ -604,7 +596,6 @@
             el.classList.add('tested-fail');
             defects.push({r, c});
             log(`[Jev] 결함 징후 포착 (${r},${c})`, 'alert');
-            // Jev instantly jumps to inference if a defect is found
             break; 
          } else {
             el.classList.add('tested-pass');
@@ -642,14 +633,13 @@
                waferData[pos.r][pos.c].isTested = true;
                testCount++;
                const isDefect = waferData[pos.r][pos.c].isDefect;
-               if (isDefect) defects.push({r: pos.r, c: pos.c}); // Record found defects
+               if (isDefect) defects.push({r: pos.r, c: pos.c});
                document.getElementById(`die-${pos.r}-${pos.c}`).classList.add(isDefect ? 'tested-fail' : 'tested-pass');
                document.getElementById('stat-time').innerText = ((1 - testCount/validDies)*100).toFixed(1) + '%';
                await new Promise(res => setTimeout(res, 4));
             }
          }
          
-         // Strict mode Extra sweep around ALL found defects (just to be mathematically guaranteed like Bayesian, but faster because Jev routed better)
          if (currentMode === 'strict') {
             log(`[Jev Strict Mode] 잔여 미세 결함 방어용 로컬 스윕 가동.`, 'warning');
             for (let d of defects) {
@@ -673,202 +663,135 @@
       await new Promise(res => setTimeout(res, 500));
       
     } else {
-             document.getElementById(`die-${r}-${c}`).classList.add('tested-pass');
-         }
-         document.getElementById('stat-time').innerText = ((1 - testCount/validDies)*100).toFixed(1) + '%';
-         if(testCount % 5 === 0) await new Promise(res => setTimeout(res, 2));
-      }
+      // 통계적 베이지안 엔진
+      const initialTests = Math.floor(validDies * 0.05); 
+      log(`[탐색 1단계] 5% 무작위 표본 추출 중...`);
       
-      // 2. Jev automatically recognizes the true pattern geometric bounds (NO CHEAT)
-      // 오직 지금까지 탐색한(isTested===true) 표본만을 바탕으로 기하학적 추론
-      const inferenceResult = pseudoJevInference(waferData);
-      topPattern = inferenceResult.pattern;
-      
-      log(`[Jev] 5% 표본 기하학적 분석 완료. 최적 경로 Bounding Box 도출.`, 'success');
-      
-      // Update probability bars to show Jev's high confidence
-      let jevBeliefs = {};
-      wm811kClasses.forEach(c => jevBeliefs[c.id] = 0.001);
-      if(wm811kClasses.find(c => c.id === topPattern)) {
-          jevBeliefs[topPattern] = 0.999;
-      }
-      updateProbs(jevBeliefs);
-      
-      // 3. Jev smart routing
-      let toTest = inferenceResult.toTest;
-      
-      // If Strict Mode, we add extra sweeping to the predicted bounding box
-      if (currentMode === 'strict') {
-         let strictTest = [];
-         toTest.forEach(pos => {
-            for(let dr=-1; dr<=1; dr++){
-               for(let dc=-1; dc<=1; dc++){
-                  let nr = pos.r+dr, nc = pos.c+dc;
-                  if(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE && !waferData[nr][nc].isOut && !waferData[nr][nc].isTested) {
-                     strictTest.push({r:nr, c:nc});
-                  }
-               }
-            }
-         });
-         toTest = toTest.concat(strictTest);
-      }
-      
-      // deduplicate
-      let uniqueTests = [];
-      let seen = new Set();
-      for(let pos of toTest) {
-         let key = `${pos.r}-${pos.c}`;
-         if(!seen.has(key)) { seen.add(key); uniqueTests.push(pos); }
-      }
-      
-      if (currentMode === 'strict') log(`[Zero-Defect 프로토콜] Jev 예측 궤적 반경 1칸 집중 검사.`, 'danger');
-      else log(`[High-Throughput] Jev 예측 결함 궤적만 정밀 타격.`, 'info');
-      
-      for(let pos of uniqueTests) {
-         if(!isSimulating) return;
-         if(!waferData[pos.r][pos.c].isTested) {
-            waferData[pos.r][pos.c].isTested = true;
-            testCount++;
-            document.getElementById(`die-${pos.r}-${pos.c}`).classList.add(waferData[pos.r][pos.c].isDefect ? 'tested-fail' : 'tested-pass');
-            document.getElementById('stat-time').innerText = ((1 - testCount/validDies)*100).toFixed(1) + '%';
-            await new Promise(res => setTimeout(res, 4));
-         }
-      }
-      
-      // Wait a moment before finishing
-      await new Promise(res => setTimeout(res, 500));
-      
-    } else {
-const initialTests = Math.floor(validDies * 0.05); 
-    log(`[탐색 1단계] 5% 무작위 표본 추출 중...`);
-    
-    let defectsFound = 0;
-    for (let i = 0; i < initialTests; i++) {
-      if(!isSimulating) return;
-      const {r, c} = getRandomUntested();
-      waferData[r][c].isTested = true;
-      testCount++;
-      
-      const el = document.getElementById(`die-${r}-${c}`);
-      if (waferData[r][c].isDefect) {
-         el.classList.add('tested-fail');
-         defectsFound++;
-         beliefs[targetType] += 0.08; 
-         wm811kClasses.forEach(cls => { if(cls.id !== targetType && beliefs[cls.id] > 0.05) beliefs[cls.id] -= 0.01; });
-         beliefs['none'] = 0.01;
-      } else {
-         el.classList.add('tested-pass');
-      }
-      
-      let sum = Object.values(beliefs).reduce((a,b)=>a+b,0);
-      for(let k in beliefs) beliefs[k] /= sum;
-      updateProbs(beliefs);
-      
-      document.getElementById('stat-time').innerText = ((1 - testCount/validDies)*100).toFixed(1) + '%';
-      await new Promise(res => setTimeout(res, 5));
-    }
-    
-    if (defectsFound <= Math.floor(initialTests * 0.05)) { // very low defects in initial sample
-       beliefs['none'] += 0.6;
-       let sum = Object.values(beliefs).reduce((a,b)=>a+b,0);
-       for(let k in beliefs) beliefs[k] /= sum;
-       updateProbs(beliefs);
-    }
-
-    let maxBelief = Math.max(...Object.values(beliefs));
-    topPattern = Object.keys(beliefs).find(k => beliefs[k] === maxBelief);
-    let topPatternName = wm811kClasses.find(c => c.id === topPattern).name;
-    
-    log(`[에이전트] 1차 분석 완료. 최유력 가설: ${topPatternName} (${(maxBelief*100).toFixed(1)}%)`, 'success');
-    
-    if (topPattern === 'none' && maxBelief > 0.6) {
-       log(`[탐색 2단계] WM-811K '패턴없음(None)' 웨이퍼로 의심됨. 99% 확신을 위한 교차검증만 수행합니다.`, 'info');
-    } else {
-       log(`[탐색 2단계] 지뢰찾기 능동 타겟팅 시작.`);
-    }
-    
-    while (maxBelief < targetConf && testCount < validDies * (currentMode === 'strict' ? 0.7 : 0.3)) {
-      if(!isSimulating) return;
-      
-      const {r, c} = getRandomUntested();
-      waferData[r][c].isTested = true;
-      testCount++;
-      
-      const el = document.getElementById(`die-${r}-${c}`);
-      el.classList.add('target');
-      await new Promise(res => setTimeout(res, 15)); 
-      
-      const isDefect = waferData[r][c].isDefect;
-      el.classList.remove('target');
-      el.classList.add(isDefect ? 'tested-fail' : 'tested-pass');
-      
-      if (testCount % 20 === 0 && topPattern !== 'none') {
-        log(`가설 검증: 좌표 (${r}, ${c}) 프로빙 -> ${isDefect ? 'Fail 감지 🔴' : 'Pass 확인 🟢'}`);
-      }
-      
-      if (isDefect) {
-        beliefs[targetType] += 0.05;
-        beliefs['none'] = 0.001;
-      } else {
-        if (targetType === topPattern && Math.random() > 0.5) {
-          beliefs[targetType] -= 0.01; 
+      let defectsFound = 0;
+      for (let i = 0; i < initialTests; i++) {
+        if(!isSimulating) return;
+        const {r, c} = getRandomUntested();
+        waferData[r][c].isTested = true;
+        testCount++;
+        
+        const el = document.getElementById(`die-${r}-${c}`);
+        if (waferData[r][c].isDefect) {
+           el.classList.add('tested-fail');
+           defectsFound++;
+           beliefs[targetType] += 0.08; 
+           wm811kClasses.forEach(cls => { if(cls.id !== targetType && beliefs[cls.id] > 0.05) beliefs[cls.id] -= 0.01; });
+           beliefs['none'] = 0.01;
+        } else {
+           el.classList.add('tested-pass');
         }
-        if (topPattern === 'none') beliefs['none'] += 0.02;
+        
+        let sum = Object.values(beliefs).reduce((a,b)=>a+b,0);
+        for(let k in beliefs) beliefs[k] /= sum;
+        updateProbs(beliefs);
+        
+        document.getElementById('stat-time').innerText = ((1 - testCount/validDies)*100).toFixed(1) + '%';
+        await new Promise(res => setTimeout(res, 5));
       }
       
-      let sum = Object.values(beliefs).reduce((a,b)=>a+b,0);
-      for(let k in beliefs) beliefs[k] /= sum;
-      updateProbs(beliefs);
-      
-      maxBelief = Math.max(...Object.values(beliefs));
+      if (defectsFound <= Math.floor(initialTests * 0.05)) {
+         beliefs['none'] += 0.6;
+         let sum = Object.values(beliefs).reduce((a,b)=>a+b,0);
+         for(let k in beliefs) beliefs[k] /= sum;
+         updateProbs(beliefs);
+      }
+
+      let maxBelief = Math.max(...Object.values(beliefs));
       topPattern = Object.keys(beliefs).find(k => beliefs[k] === maxBelief);
-      topPatternName = wm811kClasses.find(c => c.id === topPattern).name;
+      let topPatternName = wm811kClasses.find(c => c.id === topPattern).name;
       
-      document.getElementById('stat-time').innerText = ((1 - testCount/validDies)*100).toFixed(1) + '%';
-      await new Promise(res => setTimeout(res, 5));
-    }
-    
-    log(`[탐색 완료] 확신도 목표치(${targetConf*100}%) 도달.`, 'success');
-    
-    // Strict Mode Extra Pass
-    if (currentMode === 'strict' && topPattern !== 'none') {
-       log(`[Zero-Defect 프로토콜 가동] 발견된 불량 주변 반경 2칸(5x5) 전수조사.`, 'danger');
-       let newTests = 1;
-       while(newTests > 0) {
-          newTests = 0;
-          let toTest = [];
-          for (let r = 0; r < SIZE; r++) {
-            for (let c = 0; c < SIZE; c++) {
-              if (waferData[r][c].isTested && waferData[r][c].isDefect) {
-                 for (let dr = -2; dr <= 2; dr++) {
-                    for (let dc = -2; dc <= 2; dc++) {
-                       let nr = r+dr, nc = c+dc;
-                       if (nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE && !waferData[nr][nc].isOut && !waferData[nr][nc].isTested) {
-                          toTest.push({nr, nc});
-                       }
-                    }
-                 }
+      log(`[에이전트] 1차 분석 완료. 최유력 가설: ${topPatternName} (${(maxBelief*100).toFixed(1)}%)`, 'success');
+      
+      if (topPattern === 'none' && maxBelief > 0.6) {
+         log(`[탐색 2단계] WM-811K '패턴없음(None)' 웨이퍼로 의심됨. 99% 확신을 위한 교차검증만 수행합니다.`, 'info');
+      } else {
+         log(`[탐색 2단계] 지뢰찾기 능동 타겟팅 시작.`);
+      }
+      
+      while (maxBelief < targetConf && testCount < validDies * (currentMode === 'strict' ? 0.7 : 0.3)) {
+        if(!isSimulating) return;
+        
+        const {r, c} = getRandomUntested();
+        waferData[r][c].isTested = true;
+        testCount++;
+        
+        const el = document.getElementById(`die-${r}-${c}`);
+        el.classList.add('target');
+        await new Promise(res => setTimeout(res, 15)); 
+        
+        const isDefect = waferData[r][c].isDefect;
+        el.classList.remove('target');
+        el.classList.add(isDefect ? 'tested-fail' : 'tested-pass');
+        
+        if (testCount % 20 === 0 && topPattern !== 'none') {
+          log(`가설 검증: 좌표 (${r}, ${c}) 프로빙 -> ${isDefect ? 'Fail 감지 🔴' : 'Pass 확인 🟢'}`);
+        }
+        
+        if (isDefect) {
+          beliefs[targetType] += 0.05;
+          beliefs['none'] = 0.001;
+        } else {
+          if (targetType === topPattern && Math.random() > 0.5) {
+            beliefs[targetType] -= 0.01; 
+          }
+          if (topPattern === 'none') beliefs['none'] += 0.02;
+        }
+        
+        let sum = Object.values(beliefs).reduce((a,b)=>a+b,0);
+        for(let k in beliefs) beliefs[k] /= sum;
+        updateProbs(beliefs);
+        
+        maxBelief = Math.max(...Object.values(beliefs));
+        topPattern = Object.keys(beliefs).find(k => beliefs[k] === maxBelief);
+        topPatternName = wm811kClasses.find(c => c.id === topPattern).name;
+        
+        document.getElementById('stat-time').innerText = ((1 - testCount/validDies)*100).toFixed(1) + '%';
+        await new Promise(res => setTimeout(res, 5));
+      }
+      
+      log(`[탐색 완료] 확신도 목표치(${targetConf*100}%) 도달.`, 'success');
+      
+      if (currentMode === 'strict' && topPattern !== 'none') {
+         log(`[Zero-Defect 프로토콜 가동] 발견된 불량 주변 반경 2칸(5x5) 전수조사.`, 'danger');
+         let newTests = 1;
+         while(newTests > 0) {
+            newTests = 0;
+            let toTest = [];
+            for (let r = 0; r < SIZE; r++) {
+              for (let c = 0; c < SIZE; c++) {
+                if (waferData[r][c].isTested && waferData[r][c].isDefect) {
+                   for (let dr = -2; dr <= 2; dr++) {
+                      for (let dc = -2; dc <= 2; dc++) {
+                         let nr = r+dr, nc = c+dc;
+                         if (nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE && !waferData[nr][nc].isOut && !waferData[nr][nc].isTested) {
+                            toTest.push({nr, nc});
+                         }
+                      }
+                   }
+                }
               }
             }
-          }
-          
-          for (let pos of toTest) {
-             if (!waferData[pos.nr][pos.nc].isTested) {
-                waferData[pos.nr][pos.nc].isTested = true;
-                testCount++;
-                newTests++;
-                const isDefect = waferData[pos.nr][pos.nc].isDefect;
-                const el = document.getElementById(`die-${pos.nr}-${pos.nc}`);
-                el.classList.add(isDefect ? 'tested-fail' : 'tested-pass');
-                document.getElementById('stat-time').innerText = ((1 - testCount/validDies)*100).toFixed(1) + '%';
-                await new Promise(res => setTimeout(res, 2));
-             }
-          }
-       }
-       log(`[프로토콜 완료] 지뢰 인근 위험지역 전수조사 완료. 안전구역 일괄 스킵.`, 'info');
+            
+            for (let pos of toTest) {
+               if (!waferData[pos.nr][pos.nc].isTested) {
+                  waferData[pos.nr][pos.nc].isTested = true;
+                  testCount++;
+                  newTests++;
+                  const isDefect = waferData[pos.nr][pos.nc].isDefect;
+                  const el = document.getElementById(`die-${pos.nr}-${pos.nc}`);
+                  el.classList.add(isDefect ? 'tested-fail' : 'tested-pass');
+                  document.getElementById('stat-time').innerText = ((1 - testCount/validDies)*100).toFixed(1) + '%';
+                  await new Promise(res => setTimeout(res, 2));
+               }
+            }
+         }
+         log(`[프로토콜 완료] 지뢰 인근 위험지역 전수조사 완료. 안전구역 일괄 스킵.`, 'info');
+      }
     }
-    
-        }
     
     // Skip Evaluation
     let fatalMisses = 0;
