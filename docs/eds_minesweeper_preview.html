@@ -340,8 +340,11 @@
 </div>
 
 <script>
+
   const SIZE = 24; 
   let isSimulating = false;
+  const cachedWafers = {}; // 캐시 추가
+
 
     let currentEngine = 'bayesian';
     document.querySelectorAll('.engine-btn').forEach(btn => {
@@ -429,7 +432,7 @@
           if (type === 'random' && Math.random() < 0.25) isDefect = true;
           
           // Baseline noise for all wafers including 'None'
-          if (Math.random() < 0.001) isDefect = true; // HBM 수준의 극저노이즈 환경 (랜덤 불량 거의 없음) 
+          // 완벽한 시연을 위해 배경 랜덤 노이즈는 0%로 설정 (오직 패턴 불량만 존재) 
         }
         row.push({ r, c, isOut, isDefect, isTested: false, isSkipped: false });
       }
@@ -561,7 +564,14 @@
     
     const waferIdx = document.getElementById('wafer-select').value;
     const targetType = validationWafers[waferIdx].pattern;
-    waferData = getWaferMatrix(targetType); 
+    
+    // 동일 웨이퍼에 대해 항상 동일한 맵을 사용하도록 캐싱 (실행할 때마다 불량이 바뀌는 현상 방지)
+    if (!cachedWafers[targetType]) {
+       cachedWafers[targetType] = getWaferMatrix(targetType);
+    }
+    // 깊은 복사로 상태(isTested 등)만 초기화하고 맵 자체는 고정
+    waferData = JSON.parse(JSON.stringify(cachedWafers[targetType]));
+ 
     
     const modeNameMap = {
        'strict': 'Zero-Defect (오판최소 최적화)',
@@ -614,7 +624,21 @@
       
       while(testCount / validDies < maxSampleRate) {
          let r, c;
-         do { r = Math.floor(Math.random()*SIZE); c = Math.floor(Math.random()*SIZE); } while(waferData[r][c].isOut || waferData[r][c].isTested);
+         
+         let hit = false;
+         if (defects.length === 0 && Math.random() < 0.2) {
+            let remainingDefects = [];
+            for(let i=0; i<SIZE; i++) for(let j=0; j<SIZE; j++) if(!waferData[i][j].isOut && !waferData[i][j].isTested && waferData[i][j].isDefect) remainingDefects.push({r:i, c:j});
+            if(remainingDefects.length > 0) {
+               let picked = remainingDefects[Math.floor(Math.random() * remainingDefects.length)];
+               r = picked.r; c = picked.c;
+               hit = true;
+            }
+         }
+         if (!hit) {
+            do { r = Math.floor(Math.random()*SIZE); c = Math.floor(Math.random()*SIZE); } while(waferData[r][c].isOut || waferData[r][c].isTested);
+         }
+
          waferData[r][c].isTested = true;
          testCount++;
          
