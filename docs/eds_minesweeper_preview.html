@@ -480,29 +480,52 @@
 
 
   
+  
   // [TypeSafe Jev (System One AI) 기하학적 확장 엔진]
-  function pseudoJevInference(defects, waferData) {
+  function pseudoJevInference(defects, waferData, sampledCount) {
      if (defects.length === 0) return { pattern: 'none', toTest: [] };
      
+     const defectRate = defects.length / sampledCount;
+     
+     // 1. 밀집도(Density) 기반 거시적 패턴 판별 (Near-full, Random)
+     if (defectRate > 0.4) {
+         let toTest = [];
+         for(let r=0; r<SIZE; r++) for(let c=0; c<SIZE; c++) {
+            if (!waferData[r][c].isOut && !waferData[r][c].isTested) toTest.push({r,c});
+         }
+         return { pattern: 'near-full', toTest };
+     }
+     if (defectRate > 0.15) {
+         let toTest = [];
+         for(let r=0; r<SIZE; r++) for(let c=0; c<SIZE; c++) {
+            if (!waferData[r][c].isOut && !waferData[r][c].isTested) toTest.push({r,c});
+         }
+         return { pattern: 'random', toTest };
+     }
+     
+     // 2. 기하학적 클러스터링 (Geometric Clustering)
      const center = SIZE / 2;
-     let toTest = [];
-     let possiblePatterns = { center: 0, donut: 0, scratch: 0, loc: 0 };
+     let possiblePatterns = { center: 0, donut: 0, scratch: 0, edgeRing: 0 };
      
      defects.forEach(d => {
         let dist = Math.sqrt(Math.pow(d.r - center + 0.5, 2) + Math.pow(d.c - center + 0.5, 2));
-        if (dist <= 5.5) possiblePatterns.center++;
-        if (dist >= 3.5 && dist <= 9.0) possiblePatterns.donut++;
-        if (dist >= 9.0) possiblePatterns.donut++;
-        if (Math.abs(d.r - d.c) <= 2 || Math.abs(d.r - (SIZE - d.c)) <= 2) possiblePatterns.scratch++;
-        possiblePatterns.loc++;
+        if (dist <= 4.5) possiblePatterns.center++;
+        if (dist >= 4.0 && dist <= 8.5) possiblePatterns.donut++;
+        if (dist >= 9.0) possiblePatterns.edgeRing++;
+        if (Math.abs(d.r - d.c) <= 2) possiblePatterns.scratch++;
      });
      
      let maxVotes = 0;
-     let bestPattern = 'random';
+     let bestPattern = 'loc'; // Default fallback
      for(let k in possiblePatterns) {
-        if(possiblePatterns[k] > maxVotes) { maxVotes = possiblePatterns[k]; bestPattern = k; }
+        if(possiblePatterns[k] > maxVotes && possiblePatterns[k] >= defects.length * 0.3) { 
+           maxVotes = possiblePatterns[k]; 
+           bestPattern = k; 
+        }
      }
      
+     // 3. 최적 궤적(Bounding Box) 도출 및 정밀 타격
+     let toTest = [];
      for(let r=0; r<SIZE; r++) {
         for(let c=0; c<SIZE; c++) {
            if (waferData[r][c].isOut || waferData[r][c].isTested) continue;
@@ -510,13 +533,15 @@
            let dist = Math.sqrt(Math.pow(r - center + 0.5, 2) + Math.pow(c - center + 0.5, 2));
            let add = false;
            
-           if (possiblePatterns.donut > 0 && dist >= 3.5) add = true; // Edge-ring 포함
-           if (possiblePatterns.scratch > 0 && (Math.abs(r - c) <= 2 || Math.abs(r - (SIZE - c)) <= 2)) add = true;
-           if (possiblePatterns.center > 0 && dist <= 5.5) add = true;
+           if (bestPattern === 'donut' && dist >= 4.0 && dist <= 8.5) add = true;
+           if (bestPattern === 'scratch' && Math.abs(r - c) <= 2) add = true;
+           if (bestPattern === 'center' && dist <= 4.5) add = true;
+           if (bestPattern === 'edgeRing' && dist >= 9.0) add = true;
            
+           // 기하학적 궤적에 속하지 않거나 Loc 패턴인 경우: 발견된 불량 주변 반경 1칸(3x3)만 타격하여 시간 단축
            if (!add) {
               for(let d of defects) {
-                 if (Math.abs(d.r - r) <= 3 && Math.abs(d.c - c) <= 3) { add = true; break; }
+                 if (Math.abs(d.r - r) <= 1 && Math.abs(d.c - c) <= 1) { add = true; break; }
               }
            }
            
@@ -524,7 +549,8 @@
         }
      }
      
-     return { pattern: bestPattern, toTest };
+     const nameMap = { 'donut': 'donut', 'scratch': 'scratch', 'center': 'center', 'edgeRing': 'edge-ring', 'loc': 'loc' };
+     return { pattern: nameMap[bestPattern] || 'loc', toTest };
   }
 
   async function startSimulation() {
@@ -609,7 +635,7 @@
          }
       }
       
-      const inferenceResult = pseudoJevInference(defects, waferData);
+      const inferenceResult = pseudoJevInference(defects, waferData, testCount);
       topPattern = inferenceResult.pattern;
       
       if (defects.length === 0) {
