@@ -429,7 +429,7 @@
           if (type === 'random' && Math.random() < 0.25) isDefect = true;
           
           // Baseline noise for all wafers including 'None'
-          if (Math.random() < 0.02) isDefect = true; 
+          if (Math.random() < 0.001) isDefect = true; // HBM 수준의 극저노이즈 환경 (랜덤 불량 거의 없음) 
         }
         row.push({ r, c, isOut, isDefect, isTested: false, isSkipped: false });
       }
@@ -492,6 +492,7 @@
         let dist = Math.sqrt(Math.pow(d.r - center + 0.5, 2) + Math.pow(d.c - center + 0.5, 2));
         if (dist <= 5.5) possiblePatterns.center++;
         if (dist >= 3.5 && dist <= 9.0) possiblePatterns.donut++;
+        if (dist >= 9.0) possiblePatterns.donut++;
         if (Math.abs(d.r - d.c) <= 2 || Math.abs(d.r - (SIZE - d.c)) <= 2) possiblePatterns.scratch++;
         possiblePatterns.loc++;
      });
@@ -509,7 +510,7 @@
            let dist = Math.sqrt(Math.pow(r - center + 0.5, 2) + Math.pow(c - center + 0.5, 2));
            let add = false;
            
-           if (possiblePatterns.donut > 0 && dist >= 3.5 && dist <= 9.0) add = true;
+           if (possiblePatterns.donut > 0 && dist >= 3.5) add = true; // Edge-ring 포함
            if (possiblePatterns.scratch > 0 && (Math.abs(r - c) <= 2 || Math.abs(r - (SIZE - c)) <= 2)) add = true;
            if (possiblePatterns.center > 0 && dist <= 5.5) add = true;
            
