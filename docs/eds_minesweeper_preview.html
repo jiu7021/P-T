@@ -484,78 +484,6 @@
 
   
   
-  // [TypeSafe Jev (System One AI) 기하학적 확장 엔진]
-  function pseudoJevInference(defects, waferData, sampledCount) {
-     if (defects.length === 0) return { pattern: 'none', toTest: [] };
-     
-     const defectRate = defects.length / sampledCount;
-     
-     // 1. 밀집도(Density) 기반 거시적 패턴 판별 (Near-full, Random)
-     if (defectRate > 0.4) {
-         let toTest = [];
-         for(let r=0; r<SIZE; r++) for(let c=0; c<SIZE; c++) {
-            if (!waferData[r][c].isOut && !waferData[r][c].isTested) toTest.push({r,c});
-         }
-         return { pattern: 'near-full', toTest };
-     }
-     if (defectRate > 0.15) {
-         let toTest = [];
-         for(let r=0; r<SIZE; r++) for(let c=0; c<SIZE; c++) {
-            if (!waferData[r][c].isOut && !waferData[r][c].isTested) toTest.push({r,c});
-         }
-         return { pattern: 'random', toTest };
-     }
-     
-     // 2. 기하학적 클러스터링 (Geometric Clustering)
-     const center = SIZE / 2;
-     let possiblePatterns = { center: 0, donut: 0, scratch: 0, edgeRing: 0 };
-     
-     defects.forEach(d => {
-        let dist = Math.sqrt(Math.pow(d.r - center + 0.5, 2) + Math.pow(d.c - center + 0.5, 2));
-        if (dist <= 4.5) possiblePatterns.center++;
-        if (dist >= 4.0 && dist <= 8.5) possiblePatterns.donut++;
-        if (dist >= 9.0) possiblePatterns.edgeRing++;
-        if (Math.abs(d.r - d.c) <= 2) possiblePatterns.scratch++;
-     });
-     
-     let maxVotes = 0;
-     let bestPattern = 'loc'; // Default fallback
-     for(let k in possiblePatterns) {
-        if(possiblePatterns[k] > maxVotes && possiblePatterns[k] >= defects.length * 0.3) { 
-           maxVotes = possiblePatterns[k]; 
-           bestPattern = k; 
-        }
-     }
-     
-     // 3. 최적 궤적(Bounding Box) 도출 및 정밀 타격
-     let toTest = [];
-     for(let r=0; r<SIZE; r++) {
-        for(let c=0; c<SIZE; c++) {
-           if (waferData[r][c].isOut || waferData[r][c].isTested) continue;
-           
-           let dist = Math.sqrt(Math.pow(r - center + 0.5, 2) + Math.pow(c - center + 0.5, 2));
-           let add = false;
-           
-           if (bestPattern === 'donut' && dist >= 4.0 && dist <= 8.5) add = true;
-           if (bestPattern === 'scratch' && Math.abs(r - c) <= 2) add = true;
-           if (bestPattern === 'center' && dist <= 4.5) add = true;
-           if (bestPattern === 'edgeRing' && dist >= 9.0) add = true;
-           
-           // 기하학적 궤적에 속하지 않거나 Loc 패턴인 경우: 발견된 불량 주변 반경 1칸(3x3)만 타격하여 시간 단축
-           if (!add) {
-              for(let d of defects) {
-                 if (Math.abs(d.r - r) <= 1 && Math.abs(d.c - c) <= 1) { add = true; break; }
-              }
-           }
-           
-           if (add) toTest.push({r, c});
-        }
-     }
-     
-     const nameMap = { 'donut': 'donut', 'scratch': 'scratch', 'center': 'center', 'edgeRing': 'edge-ring', 'loc': 'loc' };
-     return { pattern: nameMap[bestPattern] || 'loc', toTest };
-  }
-
   async function startSimulation() {
     if (isSimulating) return;
     initWaferUI();
@@ -617,38 +545,107 @@
     }
 
     if (currentEngine === 'jev') {
-      log(`[TypeSafe Jev] System One 초고속 공간 인지 가동`, 'info');
+      log(`[TypeSafe Jev] System One 유기적 공간 합성(Organic Spatial Convolution) 가동`, 'info');
       
-      let defects = [];
-      let maxSampleRate = currentMode === 'strict' ? 0.25 : 0.05;
+      let defectsFound = [];
+      let maxSampleRate = currentMode === 'strict' ? 0.15 : 0.05; 
       
-      while(testCount / validDies < maxSampleRate) {
-         let r, c;
-         
-         let hit = false;
-         if (defects.length === 0 && Math.random() < 0.2) {
-            let remainingDefects = [];
-            for(let i=0; i<SIZE; i++) for(let j=0; j<SIZE; j++) if(!waferData[i][j].isOut && !waferData[i][j].isTested && waferData[i][j].isDefect) remainingDefects.push({r:i, c:j});
-            if(remainingDefects.length > 0) {
-               let picked = remainingDefects[Math.floor(Math.random() * remainingDefects.length)];
-               r = picked.r; c = picked.c;
-               hit = true;
+      // Phase 1: Smart Deterministic Grid Sampling (Halton-like)
+      let gridStep = currentMode === 'strict' ? 3 : 5;
+      for (let r = 0; r < SIZE; r++) {
+         for (let c = 0; c < SIZE; c++) {
+            if (testCount / validDies >= maxSampleRate && defectsFound.length > 0) break;
+            
+            if (!waferData[r][c].isOut && !waferData[r][c].isTested) {
+               if ((r + c) % gridStep === 0 || Math.abs(r - c) % gridStep === 0) {
+                  waferData[r][c].isTested = true;
+                  testCount++;
+                  
+                  const el = document.getElementById(`die-${r}-${c}`);
+                  if (waferData[r][c].isDefect) {
+                     el.classList.add('tested-fail');
+                     defectsFound.push({r, c});
+                     break;
+                  } else {
+                     el.classList.add('tested-pass');
+                  }
+                  document.getElementById('stat-time').innerText = ((1 - testCount/validDies)*100).toFixed(1) + '%';
+                  if(testCount % 5 === 0 && isSimulating) await new Promise(res => setTimeout(res, 1));
+               }
             }
          }
-         if (!hit) {
-            do { r = Math.floor(Math.random()*SIZE); c = Math.floor(Math.random()*SIZE); } while(waferData[r][c].isOut || waferData[r][c].isTested);
-         }
-
-         waferData[r][c].isTested = true;
-         testCount++;
+         if (defectsFound.length > 0) break;
+      }
+      
+      // Phase 2: Organic Growth (동적 Bounding Box 확장)
+      if (defectsFound.length === 0) {
+         log(`[Jev] ${maxSampleRate*100}% 격자 탐색 완료. 패턴 징후 없음. (시간 최적화 종료)`, 'success');
+         topPattern = 'none';
+      } else {
+         log(`[Jev] 결함 징후 포착. 기하학적 궤적 추적(Flood Fill Convolution) 시작.`, 'alert');
          
-         const el = document.getElementById(`die-${r}-${c}`);
-         if (waferData[r][c].isDefect) {
-            el.classList.add('tested-fail');
-            defects.push({r, c});
-            log(`[Jev] 결함 징후 포착 (${r},${c})`, 'alert');
-            break; 
-         } else {
+         let queue = [...defectsFound];
+         let searchRadius = currentMode === 'strict' ? 2 : 1; 
+         
+         while (queue.length > 0 && isSimulating) {
+            let curr = queue.shift();
+            
+            for (let dr = -searchRadius; dr <= searchRadius; dr++) {
+               for (let dc = -searchRadius; dc <= searchRadius; dc++) {
+                  let nr = curr.r + dr, nc = curr.c + dc;
+                  
+                  if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE) {
+                     if (!waferData[nr][nc].isOut && !waferData[nr][nc].isTested) {
+                        waferData[nr][nc].isTested = true;
+                        testCount++;
+                        
+                        const isDefect = waferData[nr][nc].isDefect;
+                        const el = document.getElementById(`die-${nr}-${nc}`);
+                        el.classList.add(isDefect ? 'tested-fail' : 'tested-pass');
+                        
+                        if (isDefect) {
+                           defectsFound.push({r: nr, c: nc});
+                           queue.push({r: nr, c: nc}); 
+                        }
+                        
+                        document.getElementById('stat-time').innerText = ((1 - testCount/validDies)*100).toFixed(1) + '%';
+                        if(testCount % 10 === 0) await new Promise(res => setTimeout(res, 1));
+                     }
+                  }
+               }
+            }
+         }
+         
+         // Classification for UI
+         let patternName = 'loc';
+         if (defectsFound.length > validDies * 0.4) patternName = 'near-full';
+         else {
+             const center = SIZE/2;
+             let avgDist = 0;
+             defectsFound.forEach(d => avgDist += Math.sqrt(Math.pow(d.r - center + 0.5, 2) + Math.pow(d.c - center + 0.5, 2)));
+             if(defectsFound.length > 0) avgDist /= defectsFound.length;
+             
+             let onDiag = 0;
+             defectsFound.forEach(d => { if(Math.abs(d.r - d.c) <= 3 || Math.abs(d.r - (SIZE - d.c)) <= 3) onDiag++; });
+             
+             if (onDiag > defectsFound.length * 0.7 && defectsFound.length >= 4) patternName = 'scratch';
+             else if (avgDist >= 3.5 && avgDist <= 8.5) patternName = 'donut';
+             else if (avgDist > 8.5) patternName = 'edge-ring';
+             else if (avgDist < 4.5) patternName = 'center';
+         }
+         
+         topPattern = patternName;
+         log(`[Jev] 궤적 추적 완료. 최종 판독: ${wm811kClasses.find(c => c.id === topPattern)?.name || patternName}.`, 'success');
+         
+         let jevBeliefs = {};
+         wm811kClasses.forEach(c => jevBeliefs[c.id] = 0.001);
+         if(wm811kClasses.find(c => c.id === topPattern)) jevBeliefs[topPattern] = 0.999;
+         updateProbs(jevBeliefs);
+      }
+      
+      await new Promise(res => setTimeout(res, 500));
+      
+    } else { } else {
             el.classList.add('tested-pass');
          }
          
