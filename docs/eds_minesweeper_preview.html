@@ -585,7 +585,7 @@
     let testCount = 0;
     let topPattern = "none";
     let beliefs = {};
-    wm811kClasses.forEach(c => beliefs[c.id] = 1/9); // Equal priors
+    wm811kClasses.forEach(c => beliefs[c.id] = 1/wm811kClasses.length); // Equal priors
     
     const targetConf = currentMode === 'strict' ? 0.99 : 0.80;
     
