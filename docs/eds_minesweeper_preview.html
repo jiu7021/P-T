@@ -513,6 +513,7 @@
     log(`[에이전트] ${modeNameMap[currentMode]} 모드로 구동을 시작합니다.`, 'alert');
     
     let testCount = 0;
+    let topPattern = "none";
     let beliefs = {};
     wm811kClasses.forEach(c => beliefs[c.id] = 1/9); // Equal priors
     
@@ -568,9 +569,14 @@
       }
       
       // 2. Jev automatically recognizes the true pattern geometric bounds
-      log(`[Jev] 궤적 추론 완료: ${targetType.toUpperCase()} 패턴. 기하학적 Bounding Box 도출.`, 'success');
-      document.getElementById('c-top').innerText = wm811kClasses.find(c => c.id === targetType).name;
-      document.getElementById('c-prob').innerText = '99.9%';
+      topPattern = targetType;
+      log(`[Jev] 궤적 추론 완료: ${wm811kClasses.find(c => c.id === targetType).name} 패턴. 기하학적 Bounding Box 도출.`, 'success');
+      
+      // Update probability bars to show Jev's high confidence
+      let jevBeliefs = {};
+      wm811kClasses.forEach(c => jevBeliefs[c.id] = 0.001);
+      jevBeliefs[targetType] = 0.999;
+      updateProbs(jevBeliefs);
       
       // 3. Jev smart routing (Only test actual defect paths + 1 radius if strict)
       let toTest = [];
@@ -656,7 +662,7 @@ const initialTests = Math.floor(validDies * 0.05);
     }
 
     let maxBelief = Math.max(...Object.values(beliefs));
-    let topPattern = Object.keys(beliefs).find(k => beliefs[k] === maxBelief);
+    topPattern = Object.keys(beliefs).find(k => beliefs[k] === maxBelief);
     let topPatternName = wm811kClasses.find(c => c.id === topPattern).name;
     
     log(`[에이전트] 1차 분석 완료. 최유력 가설: ${topPatternName} (${(maxBelief*100).toFixed(1)}%)`, 'success');
