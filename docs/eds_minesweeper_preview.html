@@ -213,6 +213,66 @@
   .log-entry.alert { color: var(--neon-amber); border-left-color: var(--neon-amber); }
   .log-entry.success { color: var(--neon-cyan); font-weight: bold; border-left-color: var(--neon-cyan); }
   .log-entry.danger { color: var(--neon-rose); border-left-color: var(--neon-rose); }
+
+    .engine-selector {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      background: rgba(255, 255, 255, 0.02);
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid var(--border-glass);
+    }
+    .engine-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .engine-btn:hover { background: rgba(255, 255, 255, 0.05); }
+    .engine-btn.active {
+      background: rgba(0, 240, 255, 0.1);
+      border-color: rgba(0, 240, 255, 0.3);
+      color: var(--neon-cyan);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+    }
+
+    .engine-selector {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      background: rgba(255, 255, 255, 0.02);
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid var(--border-glass);
+    }
+    .engine-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .engine-btn:hover { background: rgba(255, 255, 255, 0.05); }
+    .engine-btn.active {
+      background: rgba(0, 240, 255, 0.1);
+      border-color: rgba(0, 240, 255, 0.3);
+      color: var(--neon-cyan);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+    }
 </style>
 </head>
 <body>
@@ -225,6 +285,20 @@
       <div class="card">
         <h2 class="card-title">운용 모드 및 타겟 설정</h2>
         
+        
+        <h2 class="card-title" style="margin-top: 10px;">추론 엔진 선택</h2>
+        <div class="engine-selector" id="engine-selector">
+          <button class="engine-btn active" data-engine="bayesian">통계적 베이지안 (기존)</button>
+          <button class="engine-btn" data-engine="jev">TypeSafe Jev AI (제안)</button>
+        </div>
+
+        
+        <h2 class="card-title" style="margin-top: 10px;">추론 엔진 선택</h2>
+        <div class="engine-selector" id="engine-selector">
+          <button class="engine-btn active" data-engine="bayesian">통계적 베이지안 (기존)</button>
+          <button class="engine-btn" data-engine="jev">TypeSafe Jev AI (제안)</button>
+        </div>
+
         <div class="mode-selector" id="mode-selector">
           <button class="mode-btn active" data-mode="strict">Zero-Defect<br/><span style="font-size:11px; font-weight:normal">(HBM / 오판최소)</span></button>
           <button class="mode-btn loose" data-mode="loose">High-Throughput<br/><span style="font-size:11px; font-weight:normal">(레거시 / 시간단축)</span></button>
@@ -274,6 +348,26 @@
 <script>
   const SIZE = 24; 
   let isSimulating = false;
+
+    let currentEngine = 'bayesian';
+    document.querySelectorAll('.engine-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.engine-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentEngine = btn.dataset.engine;
+      });
+    });
+
+
+    let currentEngine = 'bayesian';
+    document.querySelectorAll('.engine-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.engine-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentEngine = btn.dataset.engine;
+      });
+    });
+
   let validDies = 0;
   let waferData = [];
   let currentMode = 'strict';
