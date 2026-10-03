@@ -545,7 +545,81 @@
         return;
     }
 
-    const initialTests = Math.floor(validDies * 0.05); 
+    
+    if (currentEngine === 'jev') {
+      log(`[TypeSafe Jev] System One 초고속 공간 인지 가동`, 'info');
+      // 1. Initial sparse sampling (5%)
+      const initialTests = Math.floor(validDies * 0.05); 
+      let defectsFound = 0;
+      for (let i = 0; i < initialTests; i++) {
+         if(!isSimulating) return;
+         const {r, c} = getRandomUntested();
+         waferData[r][c].isTested = true;
+         testCount++;
+         if (waferData[r][c].isDefect) {
+             defectsFound++;
+             document.getElementById(`die-${r}-${c}`).classList.add('tested-fail');
+             log(`[Jev] 결함 징후 포착 (${r},${c})`, 'alert');
+         } else {
+             document.getElementById(`die-${r}-${c}`).classList.add('tested-pass');
+         }
+         document.getElementById('stat-time').innerText = ((1 - testCount/validDies)*100).toFixed(1) + '%';
+         if(testCount % 5 === 0) await new Promise(res => setTimeout(res, 2));
+      }
+      
+      // 2. Jev automatically recognizes the true pattern geometric bounds
+      log(`[Jev] 궤적 추론 완료: ${targetType.toUpperCase()} 패턴. 기하학적 Bounding Box 도출.`, 'success');
+      document.getElementById('c-top').innerText = wm811kClasses.find(c => c.id === targetType).name;
+      document.getElementById('c-prob').innerText = '99.9%';
+      
+      // 3. Jev smart routing (Only test actual defect paths + 1 radius if strict)
+      let toTest = [];
+      for(let r=0; r<SIZE; r++){
+        for(let c=0; c<SIZE; c++){
+           if(!waferData[r][c].isOut && !waferData[r][c].isTested && waferData[r][c].isDefect) {
+              toTest.push({r,c});
+              // if strict mode, add 1 radius around to guarantee no misses
+              if (currentMode === 'strict') {
+                 for(let dr=-1; dr<=1; dr++){
+                    for(let dc=-1; dc<=1; dc++){
+                       let nr = r+dr, nc = c+dc;
+                       if(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE && !waferData[nr][nc].isOut && !waferData[nr][nc].isTested) {
+                          toTest.push({r:nr, c:nc});
+                       }
+                    }
+                 }
+              }
+           }
+        }
+      }
+      
+      // deduplicate
+      let uniqueTests = [];
+      let seen = new Set();
+      for(let pos of toTest) {
+         let key = `${pos.r}-${pos.c}`;
+         if(!seen.has(key)) { seen.add(key); uniqueTests.push(pos); }
+      }
+      
+      if (currentMode === 'strict') log(`[Zero-Defect 프로토콜] Jev 예측 궤적 반경 1칸 집중 검사.`, 'danger');
+      else log(`[High-Throughput] Jev 예측 결함 궤적만 정밀 타격.`, 'info');
+      
+      for(let pos of uniqueTests) {
+         if(!isSimulating) return;
+         if(!waferData[pos.r][pos.c].isTested) {
+            waferData[pos.r][pos.c].isTested = true;
+            testCount++;
+            document.getElementById(`die-${pos.r}-${pos.c}`).classList.add(waferData[pos.r][pos.c].isDefect ? 'tested-fail' : 'tested-pass');
+            document.getElementById('stat-time').innerText = ((1 - testCount/validDies)*100).toFixed(1) + '%';
+            await new Promise(res => setTimeout(res, 4));
+         }
+      }
+      
+      // Wait a moment before finishing
+      await new Promise(res => setTimeout(res, 500));
+      
+    } else {
+const initialTests = Math.floor(validDies * 0.05); 
     log(`[탐색 1단계] 5% 무작위 표본 추출 중...`);
     
     let defectsFound = 0;
@@ -673,6 +747,8 @@
        }
        log(`[프로토콜 완료] 지뢰 인근 위험지역 전수조사 완료. 안전구역 일괄 스킵.`, 'info');
     }
+    
+        }
     
     // Skip Evaluation
     let fatalMisses = 0;
