@@ -478,7 +478,99 @@
     });
   }
 
+
+  // [TypeSafe Jev (System One AI) 모사 알고리즘]
+  // 5% 샘플링된 데이터만 보고 정답을 유추하는 공간/기하학적 추론 엔진 (Cheat 안 씀)
+  function pseudoJevInference(waferData) {
+     let defects = [];
+     for(let r=0; r<SIZE; r++) {
+        for(let c=0; c<SIZE; c++) {
+           if(waferData[r][c].isTested && waferData[r][c].isDefect) {
+              defects.push({r, c});
+           }
+        }
+     }
+     
+     if (defects.length === 0) return { pattern: 'none', toTest: [] };
+     
+     const center = SIZE / 2;
+     let avgR = 0, avgC = 0, avgDist = 0;
+     defects.forEach(d => {
+        avgR += d.r; avgC += d.c;
+        avgDist += Math.sqrt(Math.pow(d.r - center + 0.5, 2) + Math.pow(d.c - center + 0.5, 2));
+     });
+     avgR /= defects.length; avgC /= defects.length; avgDist /= defects.length;
+     
+     let pattern = 'random';
+     let toTest = [];
+     
+     // 1. 도넛 (Donut) 판별
+     if (avgDist >= 4.0 && avgDist <= 8.5) {
+        let isDonut = defects.every(d => {
+           let dist = Math.sqrt(Math.pow(d.r - center + 0.5, 2) + Math.pow(d.c - center + 0.5, 2));
+           return dist >= 3.5 && dist <= 9.0;
+        });
+        if (isDonut && defects.length > 1) {
+           pattern = 'donut';
+           for(let r=0; r<SIZE; r++) {
+             for(let c=0; c<SIZE; c++) {
+                let d = Math.sqrt(Math.pow(r - center + 0.5, 2) + Math.pow(c - center + 0.5, 2));
+                if (d >= 4.0 && d <= 8.5 && !waferData[r][c].isOut && !waferData[r][c].isTested) {
+                   toTest.push({r, c});
+                }
+             }
+           }
+           return { pattern, toTest };
+        }
+     }
+     
+     // 2. 스크래치 (Scratch) 선형 판별
+     if (defects.length >= 2) {
+        pattern = 'scratch';
+        for(let r=0; r<SIZE; r++) {
+          for(let c=0; c<SIZE; c++) {
+             if (Math.abs(r - c) <= 2 || Math.abs(r - (SIZE - c)) <= 2) {
+                if (!waferData[r][c].isOut && !waferData[r][c].isTested) {
+                   toTest.push({r, c});
+                }
+             }
+          }
+        }
+        return { pattern, toTest };
+     }
+     
+     // 3. Center 판별
+     if (avgDist < 4.5) {
+         pattern = 'center';
+         for(let r=0; r<SIZE; r++) {
+           for(let c=0; c<SIZE; c++) {
+              let d = Math.sqrt(Math.pow(r - center + 0.5, 2) + Math.pow(c - center + 0.5, 2));
+              if (d <= 5.0 && !waferData[r][c].isOut && !waferData[r][c].isTested) {
+                 toTest.push({r, c});
+              }
+           }
+         }
+         return { pattern, toTest };
+     }
+     
+     // 4. 나머지 (Edge-Loc, Random 등)
+     pattern = 'loc';
+     defects.forEach(d => {
+        for(let dr=-3; dr<=3; dr++) {
+           for(let dc=-3; dc<=3; dc++) {
+              let nr = d.r+dr, nc = d.c+dc;
+              if(nr>=0 && nr<SIZE && nc>=0 && nc<SIZE && !waferData[nr][nc].isOut && !waferData[nr][nc].isTested) {
+                 toTest.push({r: nr, c: nc});
+              }
+           }
+        }
+     });
+     
+     return { pattern, toTest };
+  }
+
   async function startSimulation() {
+
     if (isSimulating) return;
     initWaferUI();
     isSimulating = true;
@@ -553,35 +645,38 @@
          if(testCount % 5 === 0) await new Promise(res => setTimeout(res, 2));
       }
       
-      // 2. Jev automatically recognizes the true pattern geometric bounds
-      topPattern = targetType;
-      log(`[Jev] 궤적 추론 완료: ${wm811kClasses.find(c => c.id === targetType).name} 패턴. 기하학적 Bounding Box 도출.`, 'success');
+      // 2. Jev automatically recognizes the true pattern geometric bounds (NO CHEAT)
+      // 오직 지금까지 탐색한(isTested===true) 표본만을 바탕으로 기하학적 추론
+      const inferenceResult = pseudoJevInference(waferData);
+      topPattern = inferenceResult.pattern;
+      
+      log(`[Jev] 5% 표본 기하학적 분석 완료. 최적 경로 Bounding Box 도출.`, 'success');
       
       // Update probability bars to show Jev's high confidence
       let jevBeliefs = {};
       wm811kClasses.forEach(c => jevBeliefs[c.id] = 0.001);
-      jevBeliefs[targetType] = 0.999;
+      if(wm811kClasses.find(c => c.id === topPattern)) {
+          jevBeliefs[topPattern] = 0.999;
+      }
       updateProbs(jevBeliefs);
       
-      // 3. Jev smart routing (Only test actual defect paths + 1 radius if strict)
-      let toTest = [];
-      for(let r=0; r<SIZE; r++){
-        for(let c=0; c<SIZE; c++){
-           if(!waferData[r][c].isOut && !waferData[r][c].isTested && waferData[r][c].isDefect) {
-              toTest.push({r,c});
-              // if strict mode, add 1 radius around to guarantee no misses
-              if (currentMode === 'strict') {
-                 for(let dr=-1; dr<=1; dr++){
-                    for(let dc=-1; dc<=1; dc++){
-                       let nr = r+dr, nc = c+dc;
-                       if(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE && !waferData[nr][nc].isOut && !waferData[nr][nc].isTested) {
-                          toTest.push({r:nr, c:nc});
-                       }
-                    }
-                 }
-              }
-           }
-        }
+      // 3. Jev smart routing
+      let toTest = inferenceResult.toTest;
+      
+      // If Strict Mode, we add extra sweeping to the predicted bounding box
+      if (currentMode === 'strict') {
+         let strictTest = [];
+         toTest.forEach(pos => {
+            for(let dr=-1; dr<=1; dr++){
+               for(let dc=-1; dc<=1; dc++){
+                  let nr = pos.r+dr, nc = pos.c+dc;
+                  if(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE && !waferData[nr][nc].isOut && !waferData[nr][nc].isTested) {
+                     strictTest.push({r:nr, c:nc});
+                  }
+               }
+            }
+         });
+         toTest = toTest.concat(strictTest);
       }
       
       // deduplicate
