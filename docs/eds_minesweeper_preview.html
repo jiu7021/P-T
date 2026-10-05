@@ -458,7 +458,8 @@
   }
 
   function updateProbs(beliefs) {
-    const container = document.getElementById('prob-bars');
+    const container = document.getElementById('probabilities');
+    if (!container) return;
     container.innerHTML = '';
     
     let sorted = Object.entries(beliefs).sort((a,b) => b[1]-a[1]);
@@ -466,28 +467,23 @@
     sorted.forEach(([id, val]) => {
       const cls = wm811kClasses.find(c => c.id === id);
       const row = document.createElement('div');
-      row.className = 'prob-row';
+      row.className = 'prob-item';
       
-      const label = document.createElement('div');
-      label.className = 'prob-label';
-      label.innerText = cls.name;
+      const header = document.createElement('div');
+      header.className = 'prob-header';
+      header.innerHTML = `<span>${cls.name}</span><span>${(val * 100).toFixed(1)}%</span>`;
       
-      const barContainer = document.createElement('div');
-      barContainer.className = 'prob-bar';
+      const track = document.createElement('div');
+      track.className = 'prob-track';
       
       const fill = document.createElement('div');
       fill.className = 'prob-fill';
       fill.style.width = `${(val * 100).toFixed(1)}%`;
       if (val > 0.8) fill.style.background = '#4CAF50';
       
-      const percent = document.createElement('div');
-      percent.className = 'prob-val';
-      percent.innerText = `${(val * 100).toFixed(1)}%`;
-      
-      barContainer.appendChild(fill);
-      row.appendChild(label);
-      row.appendChild(barContainer);
-      row.appendChild(percent);
+      track.appendChild(fill);
+      row.appendChild(header);
+      row.appendChild(track);
       container.appendChild(row);
     });
   }
