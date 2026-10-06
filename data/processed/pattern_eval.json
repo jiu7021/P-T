@@ -164,5 +164,11 @@
       0,
       16
     ]
-  ]
+  ],
+  "leak_experiment": {
+    "random_split_accuracy": 0.985,
+    "random_split_macro_f1": 0.962,
+    "lot_split_accuracy": 0.748,
+    "lot_split_macro_f1": 0.763
+  }
 }

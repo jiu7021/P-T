@@ -273,8 +273,20 @@ def main() -> int:
     secom["risk"] = json.loads((PROCESSED / "secom_sensor_risk.json").read_text(encoding="utf-8"))
 
     print("평가 지표 로드…")
+    
     pat_eval = json.loads((PROCESSED / "pattern_eval.json").read_text(encoding="utf-8"))
     def_eval = json.loads((PROCESSED / "defect_eval.json").read_text(encoding="utf-8"))
+    
+    try:
+        lot_test = json.loads((PROCESSED / "lot_pattern_test.json").read_text(encoding="utf-8"))
+    except:
+        lot_test = None
+        
+    try:
+        llm_report = json.loads((PROCESSED / "llm_lot_report.json").read_text(encoding="utf-8"))
+    except:
+        llm_report = None
+
     fail_cfg = json.loads((PROCESSED / "fail_address_demo.json").read_text(encoding="utf-8"))
     import yaml
     with open(ROOT / "config" / "fail_modes.yaml", encoding="utf-8") as f:
@@ -297,8 +309,10 @@ def main() -> int:
         "eds": eds,
         "secom": secom,
         "sem": sem,
-        "pattern_eval": pat_eval,
+                "pattern_eval": pat_eval,
         "defect_eval": def_eval,
+        "lot_test": lot_test,
+        "llm_report": llm_report,
         "fail_address": {"address_space": fail_cfg["address_space"],
                          "rules": fail_cfg["rules"],
                          "modes_meta": fail_cfg["meta"],

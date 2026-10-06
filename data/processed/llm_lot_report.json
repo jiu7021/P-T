@@ -1,0 +1,194 @@
+{
+  "lots": [
+    {
+      "lot_id": "LOT_#44271",
+      "risk_level": "HIGH",
+      "risk_score": 87,
+      "detected_pattern": "Center / Scratch",
+      "defect_rate": 28.4,
+      "wafers_inspected": 25,
+      "gate_status": "AUTO_REJECT_INSPECT",
+      "gate_desc": "위험도 임계치(70%) 초과 — 긴급 설비 인터락 발령",
+      "permutation_p_value": 0.0,
+      "pattern_clustering": "매우 높음 (동일 설비 체류)",
+      "pipeline_status": "INTERLOCK ISSUED ⚡",
+      "pipeline_color": "var(--neon-rose)",
+      "tool_calls": [
+        {
+          "step": 1,
+          "name": "cnn_spatial_classifier",
+          "params": "{\"lot_id\": \"LOT_#44271\", \"wafers\": 25, \"model\": \"Group-CNN\"}",
+          "result": "Center / Scratch 동시 감지 (확신도: 94.2%, 불량률: 28.4%)"
+        },
+        {
+          "step": 2,
+          "name": "permutation_test_runner",
+          "params": "{\"lot_id\": \"LOT_#44271\", \"n_trials\": 1000, \"correction\": \"B-H\"}",
+          "result": "관측 842건 vs 무작위 156.4건 (p-value: 0.0000, 유의미한 군집)"
+        },
+        {
+          "step": 3,
+          "name": "confidence_gatekeeper",
+          "params": "{\"confidence\": 0.942, \"threshold\": 0.70, \"rule\": \"HighRiskInterlock\"}",
+          "result": "게이트 통과: 고위험 자동 인터락 및 긴급 개입 트리거"
+        }
+      ],
+      "agent_synthesis": "초기 웨이퍼 3장에서 중심부(Center) 및 스크래치(Scratch) 패턴이 동일 위치에 반복 형성되었습니다. 1,000회 순열 귀무 검정(p=0.0000) 상 단순 우연이 아닌 특정 식각 챔버(Chamber 03) 체류 결함 전이가 입증되었으며, 잔여 웨이퍼 불량 전이율은 87%로 추정됩니다.",
+      "action_directive": "[MES 긴급 조치] 식각 챔버(Etch-Chamber 03) 즉각 가동 중단(Interlock) 및 잔여 22장 전수 검사 강제 세팅",
+      "latency": "1.8s",
+      "tokens": 448
+    },
+    {
+      "lot_id": "LOT_#11842",
+      "risk_level": "HIGH",
+      "risk_score": 92,
+      "detected_pattern": "Edge-Ring (가장자리 링)",
+      "defect_rate": 34.1,
+      "wafers_inspected": 25,
+      "gate_status": "AUTO_HOLD",
+      "gate_desc": "위험도 임계치(70%) 초과 — 후속 랏 투입 전면 홀드",
+      "permutation_p_value": 0.0001,
+      "pattern_clustering": "극도로 높음 (베벨/CMP 연마 편차)",
+      "pipeline_status": "LINE HOLD ⚡",
+      "pipeline_color": "var(--neon-rose)",
+      "tool_calls": [
+        {
+          "step": 1,
+          "name": "cnn_spatial_classifier",
+          "params": "{\"lot_id\": \"LOT_#11842\", \"wafers\": 25, \"model\": \"Group-CNN\"}",
+          "result": "Edge-Ring 외곽 링 감지 (8/25장 연속 관측, 불량률: 34.1%)"
+        },
+        {
+          "step": 2,
+          "name": "permutation_test_runner",
+          "params": "{\"lot_id\": \"LOT_#11842\", \"n_trials\": 1000, \"correction\": \"B-H\"}",
+          "result": "외곽 베벨 집중도 p-value: 0.0001 (설비적 편차 확정)"
+        },
+        {
+          "step": 3,
+          "name": "confidence_gatekeeper",
+          "params": "{\"confidence\": 0.981, \"threshold\": 0.70, \"rule\": \"BevelCrackHazard\"}",
+          "result": "게이트 통과: 다이 크랙 고위험 감지 -> 후속 공정 전면 홀드"
+        }
+      ],
+      "agent_synthesis": "로트 25장 중 8장의 외곽 베벨 라인을 따라 Edge-Ring 결함이 강력하게 집적되었습니다. CMP 연마 헤드 외곽 압력 불균일 또는 EBR 노즐 정렬 불량으로 판단되며, 쏘잉(Sawing) 공정 시 다이 크랙(Die Crack) 파손 위험이 극히 높습니다.",
+      "action_directive": "[MES 라인 인터락] 베벨/CMP 계측 보정 전까지 해당 랏 전면 홀드(Hold) 및 후속 랏 투입 인터락 발령",
+      "latency": "2.1s",
+      "tokens": 512
+    },
+    {
+      "lot_id": "LOT_#28905",
+      "risk_level": "MEDIUM",
+      "risk_score": 52,
+      "detected_pattern": "Random (산발 불량)",
+      "defect_rate": 8.2,
+      "wafers_inspected": 25,
+      "gate_status": "HUMAN_REVIEW_GATE",
+      "gate_desc": "확신도 임계치(70%) 미달 — 엔지니어 육안 검토(Gate) 이관",
+      "permutation_p_value": 0.184,
+      "pattern_clustering": "낮음 (단순 파티클)",
+      "pipeline_status": "HUMAN GATE 🟡",
+      "pipeline_color": "var(--neon-amber)",
+      "tool_calls": [
+        {
+          "step": 1,
+          "name": "cnn_spatial_classifier",
+          "params": "{\"lot_id\": \"LOT_#28905\", \"wafers\": 25, \"model\": \"Group-CNN\"}",
+          "result": "Random 산발 불량 (확신도: 52.0%, 불량률: 8.2%)"
+        },
+        {
+          "step": 2,
+          "name": "permutation_test_runner",
+          "params": "{\"lot_id\": \"LOT_#28905\", \"n_trials\": 1000, \"correction\": \"B-H\"}",
+          "result": "순열 검정 p-value: 0.1840 (비유의미, 특정 설비 원인 아님)"
+        },
+        {
+          "step": 3,
+          "name": "confidence_gatekeeper",
+          "params": "{\"confidence\": 0.520, \"threshold\": 0.70, \"rule\": \"HumanInTheLoop\"}",
+          "result": "게이트 미달: AI 단독 승인/폐기 금지 -> 사람 검토로 안전 이관"
+        }
+      ],
+      "agent_synthesis": "산발적 파티클 불량(Random)이 부분 분산되었으나, 순열 검정(p=0.1840) 상 설비적 군집성이 입증되지 않았습니다. CNN 확신도가 52%로 임계치 미만이므로 오경보를 막기 위해 AI 자동 제어를 보류하고 신뢰성 게이트 룰에 따라 엔지니어 판단으로 이관합니다.",
+      "action_directive": "[엔지니어 이관] 설비 인터락 불필요. FA 담당 엔지니어 샘플 3장 육안 확인 후 로트 진행 수동 승인(Review Gate)",
+      "latency": "1.4s",
+      "tokens": 386
+    },
+    {
+      "lot_id": "LOT_#35120",
+      "risk_level": "LOW",
+      "risk_score": 12,
+      "detected_pattern": "None (정상/패턴 없음)",
+      "defect_rate": 0.8,
+      "wafers_inspected": 25,
+      "gate_status": "AUTO_PASS",
+      "gate_desc": "정상 범위 (수율 99.2%) — 자동 릴리즈 승인 완료",
+      "permutation_p_value": 0.942,
+      "pattern_clustering": "없음 (정상 상태)",
+      "pipeline_status": "AUTO PASS 🟢",
+      "pipeline_color": "var(--neon-green)",
+      "tool_calls": [
+        {
+          "step": 1,
+          "name": "cnn_spatial_classifier",
+          "params": "{\"lot_id\": \"LOT_#35120\", \"wafers\": 25, \"model\": \"Group-CNN\"}",
+          "result": "None 패턴 없음 (확신도: 99.4%, 불량률: 0.8%)"
+        },
+        {
+          "step": 2,
+          "name": "permutation_test_runner",
+          "params": "{\"lot_id\": \"LOT_#35120\", \"n_trials\": 1000, \"correction\": \"B-H\"}",
+          "result": "순열 검정 p-value: 0.9420 (공정 이상 신호 전무)"
+        },
+        {
+          "step": 3,
+          "name": "confidence_gatekeeper",
+          "params": "{\"confidence\": 0.994, \"threshold\": 0.70, \"rule\": \"CleanLotFastTrack\"}",
+          "result": "게이트 통과: 최고 수준 청정 로트 -> 즉시 자동 승인"
+        }
+      ],
+      "agent_synthesis": "로트 전체 25장에서 유의미한 공간 군집 결함이 전혀 발생하지 않았으며, 평균 불량률은 0.8%(수율 99.2%)로 매우 우수합니다. 순열 검정 결과 공정 SPC 관리선 내부에서 안정적으로 가동되었음을 확인했습니다.",
+      "action_directive": "[정상 릴리즈] 추가 검사 불필요. 통상 샘플링 기준 적용 후 후속 패키징 공정으로 즉시 정상 릴리즈(Release)",
+      "latency": "0.9s",
+      "tokens": 294
+    },
+    {
+      "lot_id": "LOT_#47242",
+      "risk_level": "LOW",
+      "risk_score": 15,
+      "detected_pattern": "None (정상/패턴 없음)",
+      "defect_rate": 1.2,
+      "wafers_inspected": 25,
+      "gate_status": "AUTO_PASS",
+      "gate_desc": "정상 범위 (수율 98.8%) — 자동 릴리즈 승인 완료",
+      "permutation_p_value": 0.887,
+      "pattern_clustering": "없음 (정상 상태)",
+      "pipeline_status": "AUTO PASS 🟢",
+      "pipeline_color": "var(--neon-green)",
+      "tool_calls": [
+        {
+          "step": 1,
+          "name": "cnn_spatial_classifier",
+          "params": "{\"lot_id\": \"LOT_#47242\", \"wafers\": 25, \"model\": \"Group-CNN\"}",
+          "result": "None 정상 분류 (불량률: 1.2%, 관리선 합격)"
+        },
+        {
+          "step": 2,
+          "name": "permutation_test_runner",
+          "params": "{\"lot_id\": \"LOT_#47242\", \"n_trials\": 1000, \"correction\": \"B-H\"}",
+          "result": "순열 검정 p-value: 0.8870 (로트 내 결함 전이 없음)"
+        },
+        {
+          "step": 3,
+          "name": "confidence_gatekeeper",
+          "params": "{\"confidence\": 0.988, \"threshold\": 0.70, \"rule\": \"CleanLotFastTrack\"}",
+          "result": "게이트 통과: 안정적 품질 확인 -> 정상 출하 승인"
+        }
+      ],
+      "agent_synthesis": "미세 국부 불량이 일부 있으나 자연 산발 분포이며, 로트 내 웨이퍼 간 결함 전이 징후가 없어 정상 생산품으로 분류됩니다. 위험 스코어 15점의 안정적 품질 상태입니다.",
+      "action_directive": "[정상 출하] 정상 출하 승인 및 정기 일일 SPC 모니터링 추이 유지",
+      "latency": "1.1s",
+      "tokens": 318
+    }
+  ]
+}

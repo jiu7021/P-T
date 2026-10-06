@@ -1,7 +1,96 @@
+const PAGE_META = {
+    's-llm': {
+    tag: 'LOT YIELD AGENT',
+    title: '3. 로트 수율 종합 진단',
+    desc: '웨이퍼 딥러닝 패턴과 로트 내 결함 이력을 종합하여 LLM이 해당 로트의 위험도를 평가합니다.',
+    status: '위험도 진단 완료'
+  },
+  's-overview': {
+    tag: 'DASHBOARD OVERVIEW',
+    title: '한눈에 보기',
+    desc: '3종 공개 데이터셋(WM-811K, Carinthia-S, SECOM) 기반 전수 판정 및 공정 지표 종합 현황입니다.',
+    status: '과거 데이터 기반 분석 결과'
+  },
+  's-eds': {
+    tag: 'WAFER PROBE TEST',
+    title: '1. EDS 웨이퍼 판정',
+    desc: 'WM-811K 실데이터 기반 실리콘 웨이퍼 전수 전기 시험 및 칩 내부 Fail Address 분석입니다.',
+    status: '분석 샘플 검사 완료'
+  },
+  's-fa': {
+    tag: 'ELECTRON DEFECT REVIEW',
+    title: '4. FA 물리적 결함 분석',
+    desc: 'Carinthia-S 고해상도 전자현미경 결함 위치 관측 및 문헌 기반 원인 공정 룩업 분석입니다.',
+    status: 'SEM 결함 실측 데이터 분석 완료'
+  },
+  's-map': {
+    tag: 'SPATIAL DEFECT PATTERNS',
+    title: '2. EDS 공간 불량패턴 인식',
+    desc: '8대 공간 결함 패턴 CNN 신경망 분류 및 Grad-CAM 판단 근거 영역 가시화입니다.',
+    status: 'CNN 8대 패턴 모델링 결과'
+  },
+  's-sensor': {
+    tag: 'PROCESS SPC CONTROL',
+    title: '5. FDC 공정 설비 이상 감지',
+    desc: '실제 89일간 수집된 UCI SECOM 590개 센서 시계열 및 ±3σ 관리한계 이탈 추적입니다.',
+    status: 'SECOM 590개 센서 분석 완료'
+  },
+  's-feedback': {
+    tag: 'VALIDATION RIGOR & LIMITS',
+    title: '5. 판정 피드백 & 한계',
+    desc: '전문가 판정 피드백 루프 설계 원칙 및 공개 데이터셋의 구조적 한계점 명시입니다.',
+    status: '과학적 검증 기준 준수'
+  }
+};
+
+function switchCockpitTab(tabId) {
+  document.querySelectorAll('.tab-pane').forEach(p => {
+    p.classList.toggle('on', p.id === tabId);
+  });
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.toggle('on', b.getAttribute('data-target') === tabId);
+  });
+  
+  // Update Page Header Information
+  const meta = PAGE_META[tabId];
+  if (meta) {
+    document.getElementById('pageTag').textContent = meta.tag;
+    document.getElementById('pageTitle').textContent = meta.title;
+    document.getElementById('pageSub').textContent = meta.desc;
+    document.getElementById('pageLiveStatus').textContent = meta.status;
+  }
+  
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  
+  setTimeout(() => {
+    window.dispatchEvent(new Event('resize'));
+    if (tabId === 's-eds') {
+      const es = document.getElementById('esel');
+      if (es) es.dispatchEvent(new Event('change'));
+    } else if (tabId === 's-fa') {
+      const ss = document.getElementById('ssel');
+      if (ss) ss.dispatchEvent(new Event('change'));
+    } else if (tabId === 's-map') {
+      const ws = document.getElementById('wsel');
+      if (ws) ws.dispatchEvent(new Event('change'));
+    } else if (tabId === 's-sensor') {
+      const ds = document.getElementById('dr_sel');
+      if (ds) ds.dispatchEvent(new Event('change'));
+    }
+  }, 50);
+}
+
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.getAttribute('data-target');
+    if (target) switchCockpitTab(target);
+  });
+});
+
 // P&T 워크벤치 대시보드. 외부 라이브러리·API를 쓰지 않는다.
 // 브라우저 저장소(localStorage 등)도 쓰지 않는다.
 const D = JSON.parse(document.getElementById('payload').textContent);
-const $ = (id) => document.getElementById(id);
+const $ = (id) => document.getElementById(id) || document.createElement('div');  // 없는 요소는 빈 노드로 대체
 
 // 영어 라벨은 데이터셋 원본 표기다. 화면에는 한글 설명을 함께 보인다.
 const PAT_KO = {
@@ -27,10 +116,7 @@ const MORPH_KO = {
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
 // ---------- 탭 ----------
-document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
-  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
-  document.querySelectorAll('.tab').forEach(s => s.classList.toggle('on', s.id === b.dataset.tab));
-});
+// 탭 전환은 SnowUI 레일이 담당한다(snowui-shell.js).
 
 // ================= 탭 1: 웨이퍼 맵 =================
 const W = D.wafers;
@@ -43,7 +129,7 @@ const W = D.wafers;
     sel.appendChild(o);
   });
   const wrong = W.filter(w => !w.correct).length;
-  $('wcount').textContent = `${W.length}장 · 오분류 ${wrong}장 포함(✗). 잘 맞은 것만 고르지 않았습니다.`;
+  $('wcount').textContent = `${W.length}장 · 오분류 ${wrong}장 포함(✗)했습니다. 잘 맞은 것만 선별하지 않았습니다.`;
   sel.onchange = () => drawWafer(+sel.value);
   sel.value = 0;
   drawWafer(0);
@@ -93,15 +179,15 @@ function drawWafer(i) {
   const f = w.feat_summary;
   $('winfo').innerHTML = `
     <div class="kv">
-      <b>실제 패턴</b><span>${PAT_KO[w.true_label] || w.true_label} <span style="color:var(--muted);font-size:11px">${w.true_label}</span></span>
+      <b>실제 패턴</b><span>${PAT_KO[w.true_label] || w.true_label} <span style="color:var(--muted);font-size:13px">${w.true_label}</span></span>
       <b>모델 예측</b><span class="${w.correct ? 'ok' : 'bad'}">${PAT_KO[w.pred_label] || w.pred_label} ${w.correct ? '(일치)' : '(불일치)'}</span>
-      <b>패턴 뜻</b><span style="font-size:11.5px;color:var(--muted)">${PAT_DESC[w.true_label] || ''}</span>
+      <b>패턴 뜻</b><span style="font-size:13px;color:var(--muted)">${PAT_DESC[w.true_label] || ''}</span>
       <b>다이 수</b><span>${w.die_count.toLocaleString()}</span>
       <b>불량 다이</b><span>${w.fail_count.toLocaleString()} (${(w.fail_rate * 100).toFixed(2)}%)</span>
     </div>
     <h3 style="margin-top:14px">클래스 확률 상위 4</h3>
     ${top.map(([k, v]) => `<div style="margin-bottom:6px">
-      <div style="display:flex;justify-content:space-between;font-size:12.5px">
+      <div style="display:flex;justify-content:space-between;font-size:14.5px">
         <span>${PAT_KO[k] || k}</span><span class="mono">${(v * 100).toFixed(1)}%</span></div>
       <div class="bar"><i style="width:${(v * 100).toFixed(1)}%"></i></div></div>`).join('')}
     <h3 style="margin-top:14px">공간 특징 요약</h3>
@@ -116,7 +202,8 @@ function drawWafer(i) {
 
 // ================= 탭 EDS: 웨이퍼 테스트 =================
 const E = D.eds;
-const G_COL = ['#4ca85c', '#f0bf33', '#d93630'];
+const G_COL = ['#4ca85c', '#f0bf33', '#d93630'];          // 면(막대·캔버스)용
+const G_TXT = ['var(--grade-good)', 'var(--grade-rep)', 'var(--grade-fail)'];  // 글자용
 const G_NAME = ['Good', 'Repairable', 'Fail'];
 const G_KO = ['전 시험 통과', '여분 행·열로 복구 가능', '복구 불가'];
 let eCur = 0, eGeom = null;
@@ -141,20 +228,20 @@ let eCur = 0, eGeom = null;
                : (hi !== null ? `≤ ${hi} ${t.unit}` : `≥ ${lo} ${t.unit}`);
     const temp = (E.temperatures.find(x => x.id === t.temperature) || {}).label || '';
     return `<div class="cand">
-      <div class="proc">${t.order}. ${t.label} <span style="font-weight:400;color:var(--muted);font-size:12px">${temp}</span></div>
+      <div class="proc">${t.order}. ${t.label} <span style="font-weight:400;color:var(--muted);font-size:13px">${temp}</span></div>
       <div class="rat" style="white-space:pre-line">${t.plain.trim()}</div>
-      <div style="font-size:12.5px;margin-top:5px"><b style="color:var(--muted)">규격</b> ${spec}
+      <div style="font-size:14.5px;margin-top:5px"><b style="color:var(--muted)">규격</b> ${spec}
         · <b style="color:var(--muted)">리페어 대상</b> ${
           t.repairable_scope === 'cell_array' ? '예 (셀 어레이)' : '아니오 (칩 전체 특성)'}</div>
       ${(t.reference || []).map(r => `<div class="ref">출처: ${r}</div>`).join('')}
     </div>`;
-  }).join('') + `<p style="font-size:11.5px;color:var(--warn)">규격 절대값은 가정치입니다.
+  }).join('') + `<p style="font-size:14.5px;color:var(--warn)">규격 절대값은 가정치입니다.
     항목 간 상대 관계만 물리적으로 타당하게 잡았습니다.</p>`;
 
   $('egrades').innerHTML = E.grades.map((g, i) => `<div style="margin-bottom:8px">
-      <b style="color:${G_COL[i]}">${g.label}</b>
-      <div style="font-size:12.5px;white-space:pre-line">${g.rule.trim()}</div>
-      ${g.note ? `<div style="font-size:12px;color:var(--warn);white-space:pre-line;margin-top:4px">${g.note.trim()}</div>` : ''}
+      <b style="color:${G_TXT[i]}">${g.label}</b>
+      <div style="font-size:14.5px;white-space:pre-line">${g.rule.trim()}</div>
+      ${g.note ? `<div style="font-size:13px;color:var(--warn);white-space:pre-line;margin-top:4px">${g.note.trim()}</div>` : ''}
     </div>`).join('');
 
   const ra = (D.eds.repair_analysis_steps || null);
@@ -165,7 +252,7 @@ let eCur = 0, eGeom = null;
     '강제 배정을 마친 뒤 남은 fail을 남은 여분으로 덮을 수 있는지 탐색한다.',
     '전부 덮이면 Repairable, 남으면 Fail.',
   ].map(x => `<li>${x}</li>`).join('');
-  $('erefs').innerHTML = `<div style="font-size:12px"><b style="color:var(--muted)">여분 자원</b>
+  $('erefs').innerHTML = `<div style="font-size:13px"><b style="color:var(--muted)">여분 자원</b>
       행 ${E.repair.spare_rows}개 / 열 ${E.repair.spare_cols}개 <span style="color:var(--warn)">(가정치)</span></div>`
     + (E.repair.reference || []).map(r => `<div class="ref">출처: ${r}</div>`).join('');
 
@@ -175,7 +262,7 @@ let eCur = 0, eGeom = null;
   $('emodes').innerHTML = `<table><tr><th>불량 모드</th><th>다이 수</th><th>Repairable</th></tr>`
     + rows.map(([k, v]) => `<tr><td>${MODE_LABEL_E(k)}</td><td>${v.n.toLocaleString()}</td>
         <td class="${v.repairable > 0.5 ? 'ok' : 'bad'}">${(v.repairable * 100).toFixed(2)}%</td></tr>`).join('')
-    + `</table><p style="font-size:12px;color:var(--muted);margin-top:8px">
+    + `</table><p style="font-size:13px;color:var(--muted);margin-top:8px">
       로우성 하나는 여분 행 1개로 끝납니다. 블락성은 행·열을 다 써도 못 덮습니다.
       좁은 영역에 fail이 뭉치면 어느 한 줄로 정리되지 않기 때문입니다.</p>`;
 
@@ -183,7 +270,7 @@ let eCur = 0, eGeom = null;
   const S = E.sensitivity;
   const card = (title, note, rowsArr) => `<div class="cand">
       <div class="proc">${title}</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:5px">${note}</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:5px">${note}</div>
       <table><tr><th>조건</th><th>Repairable</th><th>Fail</th></tr>
       ${rowsArr.map(([k, v, mark]) => `<tr><td>${k}${mark ? ' <b>← 기준</b>' : ''}</td>
         <td>${(v.repairable * 100).toFixed(2)}%</td><td>${(v.fail * 100).toFixed(2)}%</td></tr>`).join('')}
@@ -206,18 +293,18 @@ let eCur = 0, eGeom = null;
       <b>${tot.toLocaleString()}</b>개 전수 판정</div>
     ${[['good', 'Good'], ['repairable', 'Repairable'], ['fail', 'Fail']].map(([k, nm], i) => `
       <div style="margin-bottom:6px">
-        <div style="display:flex;justify-content:space-between;font-size:12.5px">
+        <div style="display:flex;justify-content:space-between;font-size:14.5px">
           <span>${nm}</span><span class="mono">${gc[k].toLocaleString()} (${(gc[k] / tot * 100).toFixed(2)}%)</span></div>
         <div class="bar"><i style="width:${(gc[k] / tot * 100).toFixed(1)}%;background:${G_COL[i]}"></i></div></div>`).join('')}
     <p style="font-size:13px;margin:10px 0 0">실데이터상 불량 다이 <b>${failReal.toLocaleString()}</b>개 중
       <b class="ok">${(gc.repairable / failReal * 100).toFixed(1)}%</b>를 여분 행·열로 살릴 수 있음을 확인했습니다.</p>
-    <p style="font-size:11.5px;color:var(--muted);margin-bottom:0">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:0">
       어느 다이가 불량인지는 WM-811K 실데이터가 정합니다. 측정값과 fail 주소는 합성이며,
       합성은 '왜 불량인지'만 만듭니다.</p>`;
 
   // ---- 검증이 잡아낸 오류 ----
   $('e_verify').innerHTML = `
-    <p style="font-size:12.5px;margin-top:0">코드에 검증 조건을 심어, 조건을 어기면
+    <p style="font-size:14.5px;margin-top:0">코드에 검증 조건을 심어, 조건을 어기면
       <b>결과를 저장하지 않고 중단</b>하도록 만들었습니다.</p>
     <div class="cand" style="border-color:var(--bad)">
       <div class="proc" style="color:var(--bad)">검출된 오류 — 정상 다이 275,159개가 불량으로 뒤집힘</div>
@@ -257,7 +344,7 @@ function drawEds(i) {
   $('ebar').innerHTML = [0, 1, 2].map(gi => {
     const n = w.grade.filter(v => v === gi).length;
     return `<div style="margin-bottom:5px">
-      <div style="display:flex;justify-content:space-between;font-size:12.5px">
+      <div style="display:flex;justify-content:space-between;font-size:14.5px">
         <span>${G_NAME[gi]}</span><span class="mono">${n.toLocaleString()} (${(n / tot * 100).toFixed(2)}%)</span></div>
       <div class="bar"><i style="width:${(n / tot * 100).toFixed(1)}%;background:${G_COL[gi]}"></i></div></div>`;
   }).join('');
@@ -284,7 +371,7 @@ $('emap').onclick = (ev) => {
     const spTxt = (sp.min !== null && sp.max !== null) ? `${sp.min} ~ ${sp.max}`
                 : (sp.max !== null ? `≤ ${sp.max}` : `≥ ${sp.min}`);
     return `<tr><td>${nm}</td><td class="mono ${bad ? 'bad' : ''}">${v} ${u}</td>
-      <td style="color:var(--muted);font-size:11.5px">${spTxt} ${u}</td>
+      <td style="color:var(--muted);font-size:14.5px">${spTxt} ${u}</td>
       <td>${bad ? '<span class="bad">규격 밖</span>' : '<span class="ok">통과</span>'}</td></tr>`;
   }).join('');
 
@@ -305,18 +392,18 @@ $('emap').onclick = (ev) => {
   }
 
   $('einfo').innerHTML = `
-    <div style="font-size:16px;font-weight:700;color:${G_COL[gi]};margin-bottom:2px">${G_NAME[gi]}</div>
-    <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">${G_KO[gi]}</div>
+    <div style="font-size:18px;font-weight:700;color:${G_TXT[gi]};margin-bottom:2px">${G_NAME[gi]}</div>
+    <div style="font-size:14.5px;color:var(--muted);margin-bottom:10px">${G_KO[gi]}</div>
     <div class="kv" style="margin-bottom:10px">
       <b>좌표</b><span class="mono">(${mx}, ${my})</span>
       <b>실데이터 판정</b><span>${w.grade[k] === 0 ? '정상 다이' : '불량 다이'}
-        <span style="color:var(--muted);font-size:11px">WM-811K</span></span>
+        <span style="color:var(--muted);font-size:13px">WM-811K</span></span>
     </div>
     <table style="margin-bottom:10px">
       <tr><th>시험</th><th>측정값</th><th>규격</th><th></th></tr>${rowsHtml}
     </table>
-    <div style="font-size:12.5px;line-height:1.7">${reason}</div>
-    <p style="font-size:11.5px;color:var(--muted);margin-top:10px">
+    <div style="font-size:13.8px;line-height:1.75">${reason}</div>
+    <p style="font-size:13px;color:var(--muted);margin-top:10px">
       측정값과 fail bit 주소는 합성입니다. 이 다이가 불량인지 아닌지는 실데이터가 정했고,
       합성은 <b>왜 불량인지</b>만 만듭니다.</p>`;
 
@@ -444,18 +531,18 @@ function drawChip(mode, nbits, gi, ur, uc, dx, dy, isCell) {
     <div class="kv" style="margin-bottom:9px">
       <b>fail bit</b><span>${addrs.length}개 (안 덮인 것 <b class="${rep.remaining.length ? 'bad' : 'ok'}">${rep.remaining.length}개</b>)</span>
       <b>주소 분포</b><span><b>${MODE_LABEL[res.mode] || res.mode}</b></span>
-      <b>표시 범위</b><span class="mono" style="font-size:11.5px">${span}</span>
+      <b>표시 범위</b><span class="mono" style="font-size:14.5px">${span}</span>
       <b>여분 사용</b><span class="${gi === 1 ? 'ok' : 'bad'}">행 ${rep.usedR.length}/${R},
         열 ${rep.usedC.length}/${C} → ${rep.ok ? 'Repairable' : 'Fail'}</span>
     </div>
-    <div style="font-size:12.5px;margin-bottom:8px">
+    <div style="font-size:14.5px;margin-bottom:8px">
       <b style="color:var(--muted)">판정 이유</b> ${rep.reason}</div>
-    <details><summary style="cursor:pointer;font-size:12.5px;font-weight:600">배정 과정 보기 (${rep.steps.length}단계)</summary>
-      <ol class="mono" style="font-size:11.5px;padding-left:20px;margin:6px 0 0">
+    <details><summary style="cursor:pointer;font-size:14px;font-weight:600">배정 과정 보기 (${rep.steps.length}단계)</summary>
+      <ol class="mono" style="font-size:14.5px;padding-left:20px;margin:6px 0 0">
         ${rep.steps.slice(0, 12).map(x => `<li>${x}</li>`).join('')}
         ${rep.steps.length > 12 ? `<li>… 외 ${rep.steps.length - 12}단계</li>` : ''}</ol></details>
-    <div style="font-size:12.5px;margin-top:8px;white-space:pre-line">${(md.plain || '').trim()}</div>
-    <p style="font-size:11.5px;color:var(--muted);margin-top:8px">
+    <div style="font-size:14.5px;margin-top:8px;white-space:pre-line">${(md.plain || '').trim()}</div>
+    <p style="font-size:13px;color:var(--muted);margin-top:8px">
       이 주소들은 판정에 쓰인 것과 같은 모드·개수로 다시 만든 분포입니다.
       주소 자체가 합성이므로 성질은 같지만 개별 값은 판정 시점과 다릅니다.</p>`;
 }
@@ -549,9 +636,9 @@ function drawSem(i) {
   $('sinfo').innerHTML = `
     <div class="kv">
       <b>측정된 형태</b><span><b>${MORPH_KO[s.morphology] || s.morphology}</b>
-        <span style="color:var(--muted);font-size:11px">${s.morphology}</span></span>
+        <span style="color:var(--muted);font-size:13px">${s.morphology}</span></span>
       <b>결함이 차지한 면적</b><span>${(sh.area_frac * 100).toFixed(3)}%</span>
-      <b>길이 대 폭 비</b><span>${el} <span style="color:var(--muted);font-size:11px">클수록 가늘고 길다</span></span>
+      <b>길이 대 폭 비</b><span>${el} <span style="color:var(--muted);font-size:13px">클수록 가늘고 길다</span></span>
       <b>덩어리 개수</b><span>${sh.n_components}</span>
       <b>모델이 지목한 범위</b><span>${
         s.gt_px === 0
@@ -559,9 +646,9 @@ function drawSem(i) {
                              : `${s.pred_px}px <span class="bad">— 전문가 정답은 없음(오검출)</span>`)
           : `${s.pred_px}px (전문가 표시 ${s.gt_px}px)` +
             (s.pred_px < s.gt_px * 0.6 ? ' <span class="bad">— 실제보다 좁게 잡음</span>' : '')}</span>
-      <b>파일</b><span class="mono" style="font-size:11px">${s.filename}</span>
+      <b>파일</b><span class="mono" style="font-size:13px">${s.filename}</span>
     </div>
-    <p style="font-size:11.5px;color:var(--muted);margin:8px 0 0">
+    <p style="font-size:13px;color:var(--muted);margin:8px 0 0">
       데이터셋이 결함 클래스 이름을 공개하지 않아 라벨은 숫자뿐입니다. 숫자에 임의로 결함 용어를
       붙이지 않고, 마스크에서 <b>실제로 측정한 형태</b>로 원인 공정 후보를 조회합니다.</p>`;
 
@@ -569,18 +656,18 @@ function drawSem(i) {
   const cands = CAUSE.morphologies[s.morphology].candidates;
   const obs = CAUSE.morphologies[s.morphology].observed_in_dataset;
   $('scand').innerHTML = `
-    <p style="font-size:12px;color:var(--muted);margin-top:0">
+    <p style="font-size:13px;color:var(--muted);margin-top:0">
       형태 판정: 길이 대 폭 비가 3 미만이면 둥근 덩어리형, 3~30이면 굵거나 불규칙한 선상,
       30 이상이면 가늘고 긴 선상. 임계값은 정답 마스크 4,365장의 실측 분포에서
       두 무리 사이가 비는 지점으로 정했습니다.</p>
-    <p style="font-size:12px;color:var(--muted)">데이터셋 관측: ${obs.note}</p>
+    <p style="font-size:13px;color:var(--muted)">데이터셋 관측: ${obs.note}</p>
     ${cands.map((c, k) => `<div class="cand">
       <div class="proc">[${k + 1}] ${c.process}${c.sub ? ' / ' + c.sub : ''}</div>
       <div class="rat">${c.rationale}</div>
       ${c.reference.map(r => `<div class="ref">출처: ${r}</div>`).join('')}
       <div class="note">${c.confidence_note}</div>
     </div>`).join('')}
-    <p style="font-size:12px;font-weight:600;color:var(--chip-look)">${CAUSE.meta.disclaimer}</p>`;
+    <p style="font-size:13px;font-weight:600;color:var(--chip-look)">${CAUSE.meta.disclaimer}</p>`;
 }
 
 // ================= 탭 3: Fail Address =================
@@ -676,9 +763,9 @@ if ($('fmodes')) {
   const M = D.fail_address.modes || {};
   $('fmodes').innerHTML = Object.entries(M).map(([k, v]) => `
     <div class="cand">
-      <div class="proc">${v.label} <span style="font-weight:400;color:var(--muted);font-size:12px">${k}</span></div>
+      <div class="proc">${v.label} <span style="font-weight:400;color:var(--muted);font-size:13px">${k}</span></div>
       <div class="rat" style="white-space:pre-line">${(v.plain || '').trim()}</div>
-      <div style="font-size:12.5px;margin-top:7px">
+      <div style="font-size:14.5px;margin-top:7px">
         <b style="color:var(--muted)">관련 공정</b><br>${(v.process_link || '').trim()}</div>
       ${(v.reference || []).map(r => `<div class="ref">출처: ${r}</div>`).join('')}
     </div>`).join('');
@@ -698,7 +785,7 @@ if ($('fmodes')) {
       <b>fail</b><span>${pct(S.fail_rate)} — 불균형 1 : ${((1 - S.fail_rate) / S.fail_rate).toFixed(1)}</span>
       <b>합성 비율</b><span class="ok">0% — 전부 실측값</span>
     </div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:0">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:0">
       fail이 6.6%뿐이라 accuracy는 의미가 없습니다(전부 pass로 찍어도 93.4%).
       주 지표는 <b>PR-AUC</b>이며, 기저율(무작위로 찍었을 때 값)과 나란히 봅니다.</p>`;
 
@@ -707,7 +794,7 @@ if ($('fmodes')) {
   $('sc_month').innerHTML = mo.map(([k, v]) => {
     const r = v.fail / v.n;
     return `<div style="margin-bottom:7px">
-      <div style="display:flex;justify-content:space-between;font-size:12.5px">
+      <div style="display:flex;justify-content:space-between;font-size:14.5px">
         <span>${k.slice(0, 7)} <span style="color:var(--muted)">웨이퍼 ${v.n}장</span></span>
         <span class="mono">${pct(r)}</span></div>
       <div class="bar"><i style="width:${(r / maxR * 100).toFixed(1)}%;background:var(--bad)"></i></div></div>`;
@@ -735,7 +822,7 @@ if ($('fmodes')) {
       ${rs.models.lightgbm.pr_auc.toFixed(4)}). ROC-AUC도
       ${ts.models.lightgbm.roc_auc.toFixed(3)} → ${rs.models.lightgbm.roc_auc.toFixed(3)}으로 뜁니다.
       같은 데이터, 같은 모델, 분할 방식만 다릅니다.</p>
-    <p style="font-size:12px;color:var(--muted)">결측 대치값과 표준화 통계도 <b>학습 구간에서만</b>
+    <p style="font-size:13px;color:var(--muted)">결측 대치값과 표준화 통계도 <b>학습 구간에서만</b>
       계산합니다. 검증 구간 값을 쓰면 미래 정보가 샙니다.
       학습 ${ts.n_train}장(fail ${ts.fail_train}) / 검증 ${ts.n_test}장(fail ${ts.fail_test}).</p>`;
 
@@ -746,7 +833,7 @@ if ($('fmodes')) {
         <td>${v.n_reviewed}</td><td class="${v.recall > 0.3 ? '' : 'bad'}">${pct(v.recall)}</td>
         <td>${pct(v.precision)}</td></tr>`).join('')}
     </table>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:0">무작위로 골랐다면 검출률은
+    <p style="font-size:13px;color:var(--muted);margin-bottom:0">무작위로 골랐다면 검출률은
       재검사 비율과 같습니다(5% / 10% / 20%). <b>상위 20%를 봐도 23%밖에 못 잡습니다.</b></p>`;
 
   const tr = S.improvement_trials || {};
@@ -758,7 +845,7 @@ if ($('fmodes')) {
       ${Object.entries(tr).map(([k, v]) => `<tr><td>${k}</td>
         <td class="mono">${v.pr_auc.toFixed(4)}</td><td class="mono">${v.lift.toFixed(2)}배</td></tr>`).join('')}
     </table>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:0">최고 ${best.toFixed(4)}.
+    <p style="font-size:13px;color:var(--muted);margin-bottom:0">최고 ${best.toFixed(4)}.
       <b>"튜닝을 안 해봐서 낮은 것"이 아니라 "해봐도 오르지 않는 것"</b>임을 기록합니다.</p>`;
 
   $('sc_sensors').innerHTML = `<table>
@@ -770,7 +857,7 @@ if ($('fmodes')) {
           <td class="mono">${isFinite(rel) ? (rel > 0 ? '+' : '') + rel.toFixed(1) + '%' : '-'}</td></tr>`;
       }).join('')}
     </table>
-    <p style="font-size:12px;color:var(--warn);margin-bottom:0">센서 이름은 원본에서 익명화되어
+    <p style="font-size:13px;color:var(--warn);margin-bottom:0">센서 이름은 원본에서 익명화되어
       번호로만 식별됩니다. <b>어느 장비의 무슨 물리량인지 알 수 없어 공정 개선 조치로
       연결할 수 없습니다.</b> 이것도 공개 데이터의 한계입니다.</p>`;
 
@@ -807,16 +894,16 @@ if ($('fmodes')) {
         <td class="mono">${k.peak_sigma.toFixed(1)}σ</td>
         <td class="mono ${k.now_sigma > 1 ? 'bad' : 'ok'}">${k.now_sigma.toFixed(1)}σ</td></tr>`).join('')}
     </table>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:0">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:0">
       s275의 구간별 이탈은 <span class="mono">… 0.1, 0.1, 836.9, 900.2, 0.8</span>입니다.
       두 구간에서만 900배 튀었다가 <b>정상 복귀</b>했습니다. 지속적 이동이 아닙니다.</p>`;
 
   const ex = DR.excursion_test;
   $('dr_exc').innerHTML = `
-    <p style="font-size:12.5px;margin-top:0">개별 센서로는 합불이 갈리지 않습니다
+    <p style="font-size:14.5px;margin-top:0">개별 센서로는 합불이 갈리지 않습니다
       (Cohen's d &gt; 0.8인 센서 <b>0개</b>). 그렇다면 <b>여러 센서가 동시에 관리 한계를
       벗어난 상태</b>는 어떤가 — 이것이 관리도의 실제 사용법입니다.</p>
-    <p style="font-size:12px;color:var(--muted)">웨이퍼별 3σ 이탈 센서 수: 중앙 ${ex.median_out}개,
+    <p style="font-size:13px;color:var(--muted)">웨이퍼별 3σ 이탈 센서 수: 중앙 ${ex.median_out}개,
       최대 ${ex.max_out}개. 이탈 센서가 <b>${ex.threshold_sensors}개를 넘는 웨이퍼</b>(상위 5%)를
       이상으로 정의했습니다 <span style="color:var(--warn)">(가정치)</span>.</p>
     <table>
@@ -829,14 +916,14 @@ if ($('fmodes')) {
     <p style="font-size:13px;margin-top:9px"><b>배수 ${ex.ratio.toFixed(2)}x, 오즈비
       ${ex.odds_ratio.toFixed(2)}, Fisher 정확검정 p = ${ex.p_value.toFixed(4)}</b>
       — ${ex.p_value < 0.05 ? '<span class="ok">통계적으로 유의합니다.</span>' : '유의하지 않습니다.'}</p>
-    <p style="font-size:12.5px;margin-bottom:0">이 데이터에서 쓸 수 있는 규칙은
+    <p style="font-size:14.5px;margin-bottom:0">이 데이터에서 쓸 수 있는 규칙은
       "센서 A가 높으면 불량"이 아니라 <b>"공정이 평소와 다른 상태인 웨이퍼를 우선 검사하라"</b>입니다.
       실데이터에서 합성 없이, 유의수준 1%에서 나온 결과입니다.</p>`;
 
   // ---- 센서별 위험도 (FDR 보정) ----
   const RK = S.risk;
   $('rk_risk').innerHTML = `
-    <p style="font-size:12.5px;margin-top:0">센서 ${RK.n_tested}개를 각각 검정하면, 실제로 아무 관계가
+    <p style="font-size:14.5px;margin-top:0">센서 ${RK.n_tested}개를 각각 검정하면, 실제로 아무 관계가
       없어도 유의수준 5%에서 <b>약 ${Math.round(RK.n_expected_by_chance)}개가 '유의하다'고 나옵니다.</b>
       Benjamini-Hochberg 절차로 거짓발견율(FDR ${(RK.fdr_q * 100).toFixed(0)}%)을 통제한 뒤 남는 것만 봅니다.</p>
     <table style="margin-bottom:10px">
@@ -850,12 +937,12 @@ if ($('fmodes')) {
         <td>${(r.fail_when_out * 100).toFixed(1)}%</td><td>${(r.fail_when_in * 100).toFixed(1)}%</td>
         <td class="mono ${r.risk_ratio > 1 ? 'bad' : ''}">${r.risk_ratio.toFixed(2)}</td></tr>`).join('')}
     </table>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:0">위험비가 1보다 작은 센서가 섞여 있습니다.
+    <p style="font-size:13px;color:var(--muted);margin-bottom:0">위험비가 1보다 작은 센서가 섞여 있습니다.
       <b>센서가 튀는 것과 불량이 나는 것은 같은 말이 아닙니다.</b></p>`;
 
   const DG = RK.degradation;
   $('rk_deg').innerHTML = `
-    <p style="font-size:12.5px;margin-top:0">이탈 빈도가 시간에 따라 <b>증가</b>하는 센서를 찾습니다.
+    <p style="font-size:14.5px;margin-top:0">이탈 빈도가 시간에 따라 <b>증가</b>하는 센서를 찾습니다.
       검정 ${DG.n_tested}개 중 FDR 통과하며 증가 추세인 센서는 <b>${DG.n_increasing}개</b>입니다.</p>
     <table><tr><th>센서</th><th>전반 이탈률</th><th>후반 이탈률</th><th>추세</th></tr>
       ${DG.top.slice(0, 6).map(r => `<tr><td class="mono">${r.sensor}</td>
@@ -863,14 +950,14 @@ if ($('fmodes')) {
         <td class="bad">${(r.last_half * 100).toFixed(2)}%</td>
         <td class="mono">${r.rho.toFixed(2)}</td></tr>`).join('')}
     </table>
-    <p style="font-size:12px;color:var(--warn);margin-bottom:0">이탈이 잦아지는 것은 공정 변화일 수도,
+    <p style="font-size:13px;color:var(--warn);margin-bottom:0">이탈이 잦아지는 것은 공정 변화일 수도,
       <b>센서 자체의 열화</b>일 수도 있습니다. 이 데이터에는 센서 교체·정비 이력이 없어
       둘을 구분할 수 없습니다.</p>`;
 
   // ---- 시간 순 검증 ----
   const HO = RK.holdout, hw = HO['가중 점수'];
   $('rk_holdout').innerHTML = `
-    <p style="font-size:12.5px;margin-top:0">가중치를 정한 데이터로 평가하면 과적합입니다.
+    <p style="font-size:14.5px;margin-top:0">가중치를 정한 데이터로 평가하면 과적합입니다.
       앞 ${HO.n_learn.toLocaleString()}장에서만 위험비를 학습하고 뒤 ${HO.n_eval.toLocaleString()}장에서 평가했습니다.</p>
     <table>
       <tr><th>항목</th><th>전체 데이터 기준</th><th>시간 순 분리</th></tr>
@@ -890,7 +977,7 @@ if ($('fmodes')) {
       효과 크기(배수 2.3~2.7x)는 비슷하지만, 평가 구간이 ${HO.n_eval}장·그중 fail 26장뿐이라
       검정력이 부족합니다. p = ${hw ? hw.p.toFixed(4) : '-'}은 "효과가 없다"가 아니라
       <b>"이 표본으로는 확인할 수 없다"</b>에 가깝습니다.</p>
-    <p style="font-size:12.5px;color:var(--muted);margin-bottom:0">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:0">
       이 절을 지우지 않고 남기는 이유: 분석 과정에서 그럴듯한 결과가 나왔다가 엄격한 검증에서
       무너지는 일은 실제로 자주 일어납니다. <b>무너진 사실을 기록하는 것이 결과를 부풀리는 것보다
       중요합니다.</b></p>`;
@@ -930,7 +1017,7 @@ function drawCtrl(i) {
   // 축
   g.strokeStyle = css('--border'); g.lineWidth = 1;
   g.beginPath(); g.moveTo(L, T); g.lineTo(L, H - B); g.lineTo(W - R, H - B); g.stroke();
-  g.fillStyle = css('--muted'); g.font = '10px ui-monospace, monospace';
+  g.fillStyle = css('--muted'); g.font = '12px JetBrains Mono, monospace';
   g.textAlign = 'right';
   for (const val of [lo + pad, sr.mu, hi - pad]) {
     g.fillText(val.toPrecision(3), L - 5, Y(val) + 3);
@@ -998,33 +1085,610 @@ function drawCtrl(i) {
     ['규격값의 출처', 'EDS 시험 규격은 임의값이 아니라 <b>DDR4-2400 4Gb 공개 데이터시트</b>의 실제 값입니다(IDD2N 400 mA, IDD4R 1280 mA, 동작온도 0~85°C, tREFI 기준 리프레시 주기 64 ms). 다만 WM-811K 웨이퍼의 제품 종류가 공개되지 않아, 이 규격이 그 웨이퍼의 실제 규격이라는 보장은 없습니다. 측정값 자체는 여전히 합성입니다.'],
   ];
   $('limits').innerHTML = L.map(([k, v]) =>
-    `<div style="margin-bottom:9px"><b style="font-size:12.5px">${k}</b>
-     <div style="font-size:12px;color:var(--muted)">${v}</div></div>`).join('');
+    `<div style="margin-bottom:9px"><b style="font-size:14.5px">${k}</b>
+     <div style="font-size:13px;color:var(--muted)">${v}</div></div>`).join('');
 
   const pe = D.pattern_eval, de = D.defect_eval;
   const seg = de.test_segmentation;
   $('perf').innerHTML = `
-    <b style="font-size:12.5px">Module A 패턴 분류 (로트 단위 분할)</b>
+    <b style="font-size:14.5px">Module A 패턴 분류 (로트 단위 분할)</b>
     <table style="margin-bottom:12px">
       <tr><td>test macro-F1</td><td>${pe.test_macro_f1.toFixed(3)}</td></tr>
       <tr><td>test accuracy</td><td>${pe.test_accuracy.toFixed(3)}</td></tr>
       <tr><td>가장 낮은 클래스</td><td>Loc ${pe.per_class['Loc'].f1.toFixed(3)}</td></tr>
     </table>
-    <b style="font-size:12.5px">Module B 세그멘테이션 (이미지 단위 분할)</b>
+    <b style="font-size:14.5px">Module B 세그멘테이션 (이미지 단위 분할)</b>
     <table style="margin-bottom:12px">
       <tr><td>이미지별 Dice 평균</td><td>${seg.dice_image_mean.toFixed(4)}</td></tr>
       <tr><td>이미지별 IoU 평균</td><td>${seg.iou_image_mean.toFixed(4)}</td></tr>
       <tr><td>빈 마스크 오검출 픽셀</td><td>${seg.empty_gt_fp_pixels_mean.toFixed(1)}</td></tr>
     </table>
-    <b style="font-size:12.5px">Module B 분류</b>
+    <b style="font-size:14.5px">Module B 분류</b>
     <table>
       <tr><td>macro-F1</td><td>${de.test_macro_f1.toFixed(3)}</td></tr>
       <tr><td>accuracy</td><td>${de.test_accuracy.toFixed(3)}</td></tr>
       <tr><td>class 5 (표본 ${de.per_class['5'].support}장)</td><td class="bad">${de.per_class['5'].f1.toFixed(3)}</td></tr>
     </table>
-    <p style="font-size:11.5px;color:var(--muted);margin-top:9px">
+    <p style="font-size:13px;color:var(--muted);margin-top:9px">
       macro-F1 ${de.test_macro_f1.toFixed(3)}을 그대로 읽으면 안 됩니다. 표본 1장짜리 class 5의 F1 0이
       6분의 1 가중치로 들어가 있습니다. 표본이 충분한 class 3·4·6은 각각
       ${de.per_class['3'].f1.toFixed(3)} / ${de.per_class['4'].f1.toFixed(3)} / ${de.per_class['6'].f1.toFixed(3)}입니다.</p>`;
   $('gen').textContent = `생성 ${D.meta.generated} · 시드 ${D.meta.seed}`;
 }
+
+// Override drawEds to normalize wafer diameter uniformly across all wafers without horizontal or vertical shrinking
+(function() {
+  const origDrawEds = window.drawEds;
+  window.drawEds = function(i) {
+    eCur = i;
+    const w = E.wafers[i], S = 470;
+    $('etitle').textContent = `${w.wafer_id} · ${PAT_KO[w.pattern] || w.pattern}`;
+    const c = $('emap'), g = c.getContext('2d');
+    
+    // Scale X and Y independently to form a perfect circular wafer of diameter D
+    const D = 432;
+    const px = D / w.w;
+    const py = D / w.h;
+    const ox = Math.floor((S - D) / 2);
+    const oy = Math.floor((S - D) / 2);
+    eGeom = { px, py, ox, oy };
+
+    g.clearRect(0, 0, S, S);
+    const dieW = Math.max(1, px - 0.4);
+    const dieH = Math.max(1, py - 0.4);
+    for (let k = 0; k < w.x.length; k++) {
+      g.fillStyle = G_COL[w.grade[k]];
+      g.fillRect(ox + w.x[k] * px, oy + w.y[k] * py, dieW, dieH);
+    }
+
+    const tot = w.x.length;
+    $('ebar').innerHTML = [0, 1, 2].map(gi => {
+      const n = w.grade.filter(v => v === gi).length;
+      return `<div style="margin-bottom:5px">
+        <div style="display:flex;justify-content:space-between;font-size:14.5px">
+          <span>${G_NAME[gi]}</span><span class="mono">${n.toLocaleString()} (${(n / tot * 100).toFixed(2)}%)</span></div>
+        <div class="bar"><i style="width:${(n / tot * 100).toFixed(1)}%;background:${G_COL[gi]} !important"></i></div></div>`;
+    }).join('');
+  };
+
+  // Override click event to match Euclidean distance to nearest die
+  $('emap').onclick = (ev) => {
+    const w = E.wafers[eCur], r = $('emap').getBoundingClientRect();
+    const sx = $('emap').width / r.width;
+    const sy = $('emap').height / r.height;
+    const clickX = (ev.clientX - r.left) * sx;
+    const clickY = (ev.clientY - r.top) * sy;
+
+    const mx = Math.floor((clickX - eGeom.ox) / eGeom.px);
+    const my = Math.floor((clickY - eGeom.oy) / eGeom.py);
+    let k = w.x.findIndex((x, idx) => x === mx && w.y[idx] === my);
+
+    if (k < 0) {
+      let bestDist = Infinity;
+      for (let i = 0; i < w.x.length; i++) {
+        const dx = (eGeom.ox + (w.x[i] + 0.5) * eGeom.px) - clickX;
+        const dy = (eGeom.oy + (w.y[i] + 0.5) * eGeom.py) - clickY;
+        const dist = (dx / eGeom.px) * (dx / eGeom.px) + (dy / eGeom.py) * (dy / eGeom.py);
+        if (dist < bestDist) {
+          bestDist = dist;
+          k = i;
+        }
+      }
+      if (bestDist > 2.0) return;
+    }
+    const mx_found = w.x[k], my_found = w.y[k];
+    const gi = w.grade[k];
+    const mode = E.modes[w.mode[k]] || '';
+    const spec = Object.fromEntries(E.tests.map(t => [t.id, t.spec]));
+    const rowsHtml = [
+      ['핀 전압 (오픈/쇼트)', (w.os[k] / 100).toFixed(2), 'V', spec.open_short],
+      ['대기 전류', (w.ids[k] / 100).toFixed(2), 'mA', spec.idd_standby],
+      ['동작 전류', (w.ida[k] / 10).toFixed(1), 'mA', spec.idd_active],
+      ['리텐션 (85°C)', (w.ret[k] / 10).toFixed(1), 'ms', spec.retention_hot],
+    ].map(([nm, v, u, sp]) => {
+      const val = parseFloat(v);
+      const bad = (sp.min !== null && val < sp.min) || (sp.max !== null && val > sp.max);
+      const spTxt = (sp.min !== null && sp.max !== null) ? `${sp.min} ~ ${sp.max}`
+                  : (sp.max !== null ? `≤ ${sp.max}` : `≥ ${sp.min}`);
+      return `<tr><td>${nm}</td><td class="mono ${bad ? 'bad' : ''}">${v} ${u}</td>
+        <td style="color:var(--muted);font-size:14.5px">${spTxt} ${u}</td>
+        <td>${bad ? '<span class="bad">규격 밖</span>' : '<span class="ok">통과</span>'}</td></tr>`;
+    }).join('');
+
+    const isCell = ['single_bit', 'row_fail', 'column_fail', 'block_fail', 'cross_fail'].includes(mode);
+    const modeMap = {'open_short': '오픈/쇼트', 'idd_standby': '대기 전류', 'idd_active': '동작 전류'};
+    let reason;
+    if (gi === 0) {
+      reason = '모든 시험을 규격 안에서 통과했습니다.';
+    } else if (!isCell && mode) {
+      reason = `<b>${modeMap[mode]}</b>가
+        규격을 벗어났습니다. 여분 행·열은 <b>셀 어레이</b>를 대체하는 자원이므로,
+        이런 칩 전체 특성 불량은 갈아끼울 대상이 없어 리페어가 성립하지 않습니다. → Fail`;
+    } else {
+      reason = `셀 어레이 불량 <b>${MODE_LABEL_E(mode)}</b>, fail bit ${w.nbits[k]}개.
+        리페어 분석 결과 여분 행 <b>${w.ur[k]}/${E.repair.spare_rows}</b>,
+        열 <b>${w.uc[k]}/${E.repair.spare_cols}</b>을 사용했으며 `
+        + (gi === 1 ? '전부 덮였습니다. → <b>Repairable</b>'
+                    : '여분을 다 써도 fail이 남았습니다. → <b>Fail</b>');
+    }
+
+    $('einfo').innerHTML = `
+      <div style="font-size:18px;font-weight:700;color:${G_TXT[gi]};margin-bottom:2px">${G_NAME[gi]}</div>
+      <div style="font-size:14.5px;color:var(--muted);margin-bottom:10px">${G_KO[gi]}</div>
+      <div class="kv" style="margin-bottom:10px">
+        <b>좌표</b><span class="mono">(${mx_found}, ${my_found})</span>
+        <b>실데이터 판정</b><span>${w.grade[k] === 0 ? '정상 다이' : '불량 다이'}
+          <span style="color:var(--muted);font-size:13px">WM-811K</span></span>
+      </div>
+      <table style="margin-bottom:10px">
+        <tr><th>시험</th><th>측정값</th><th>규격</th><th></th></tr>${rowsHtml}
+      </table>
+      <div style="font-size:13.8px;line-height:1.75">${reason}</div>`;
+
+    drawChip(mode, w.nbits[k], gi, w.ur[k], w.uc[k], mx_found, my_found, isCell);
+  };
+
+  // Also Normalize drawWafer for Tab 3 (WM-811K) to fill perfect circle
+  const origDrawWafer = window.drawWafer;
+  window.drawWafer = function(i) {
+    origDrawWafer(i);
+    const w = W[i], S = 440;
+    const D = 402;
+    const px = D / w.w;
+    const py = D / w.h;
+    const ox = Math.floor((S - D) / 2);
+    const oy = Math.floor((S - D) / 2);
+
+    const c = $('wmap'), g = c.getContext('2d');
+    g.clearRect(0, 0, S, S);
+    const cols = [css('--die-out'), css('--die-pass'), css('--die-fail')];
+    const dieW = Math.max(1, px - 0.4);
+    const dieH = Math.max(1, py - 0.4);
+    for (let y = 0; y < w.h; y++) for (let x = 0; x < w.w; x++) {
+      const v = w.grid[y * w.w + x];
+      if (v === 0) continue;
+      g.fillStyle = cols[v];
+      g.fillRect(ox + x * px, oy + y * py, dieW, dieH);
+    }
+
+    const c2 = $('wcam'), g2 = c2.getContext('2d');
+    g2.clearRect(0, 0, S, S);
+    g2.globalAlpha = 0.35;
+    for (let y = 0; y < w.h; y++) for (let x = 0; x < w.w; x++) {
+      if (w.grid[y * w.w + x] === 0) continue;
+      g2.fillStyle = cols[w.grid[y * w.w + x]];
+      g2.fillRect(ox + x * px, oy + y * py, dieW, dieH);
+    }
+    g2.globalAlpha = 1;
+    const N = 64;
+    for (let y = 0; y < w.h; y++) for (let x = 0; x < w.w; x++) {
+      if (w.grid[y * w.w + x] === 0) continue;
+      const cy = Math.min(N - 1, Math.floor((y + 0.5) / w.h * N));
+      const cx = Math.min(N - 1, Math.floor((x + 0.5) / w.w * N));
+      const v = w.cam[cy * N + cx] / 100;
+      if (v < 0.15) continue;
+      g2.fillStyle = `rgba(230,60,40,${(v * 0.75).toFixed(3)})`;
+      g2.fillRect(ox + x * px, oy + y * py, dieW, dieH);
+    }
+  };
+
+  // Re-run initial draw with true circular geometry immediately
+  if (typeof drawEds === 'function') {
+    try { drawEds(eCur || 0); } catch(e) {}
+  }
+  if (typeof drawWafer === 'function') {
+    try {
+      const ws = $('wsel');
+      if (ws) drawWafer(+ws.value || 0);
+    } catch(e) {}
+  }
+})();
+
+window.addEventListener('DOMContentLoaded', () => {
+  // 1. Synchronize EDS Wafer List
+  const esel = document.getElementById('esel');
+  const customEdsList = document.getElementById('custom-eds-wafer-list');
+  if (esel && customEdsList) {
+    function populateEdsCustom() {
+      customEdsList.innerHTML = '';
+      Array.from(esel.options).forEach((opt, idx) => {
+        const row = document.createElement('div');
+        row.className = 'wafer-item-row' + (idx === esel.selectedIndex ? ' on' : '');
+        const cleanText = (opt.text || opt.textContent || "").replace(/[\u3000\s]+/g, ' ').trim();
+        row.innerHTML = `
+          <div class="w-row-left">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--neon-green)"></span>
+            <div class="w-row-id">${cleanText}</div>
+          </div>
+          <div class="w-row-badge" style="background:rgba(0,240,255,0.1);color:var(--neon-cyan)">#${idx+1}</div>
+        `;
+        row.onclick = () => {
+          esel.selectedIndex = idx;
+          esel.dispatchEvent(new Event('change'));
+          document.querySelectorAll('#custom-eds-wafer-list .wafer-item-row').forEach(r => r.classList.remove('on'));
+          row.classList.add('on');
+          const sideW = document.getElementById('side-cur-wafer');
+          if (sideW) sideW.textContent = cleanText.split(' ')[0] || cleanText;
+        };
+        customEdsList.appendChild(row);
+      });
+    }
+    setTimeout(populateEdsCustom, 120);
+  }
+
+  // 2. Synchronize SEM List (Clean typography without fullwidth spaces)
+  const ssel = document.getElementById('ssel');
+  const customSemList = document.getElementById('custom-sem-list');
+  if (ssel && customSemList) {
+    function populateSemCustom() {
+      customSemList.innerHTML = '';
+      Array.from(ssel.options).forEach((opt, idx) => {
+        const row = document.createElement('div');
+        row.className = 'wafer-item-row' + (idx === ssel.selectedIndex ? ' on' : '');
+        const raw = (opt.text || opt.textContent || "").replace(/[　]+/g, ' ').replace(/\s+/g, ' ').trim();
+        const parts = raw.split('라벨');
+        const desc = (parts[0] || raw).trim();
+        const lblNum = (parts[1] || '').trim();
+        row.innerHTML = `
+          <div class="w-row-left">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--neon-amber)"></span>
+            <div class="w-row-id" style="font-size:14px">${desc}</div>
+          </div>
+          <div class="w-row-badge" style="background:rgba(255,179,0,0.15);color:var(--neon-amber)">라벨 ${lblNum}</div>
+        `;
+        row.onclick = () => {
+          ssel.selectedIndex = idx;
+          ssel.dispatchEvent(new Event('change'));
+          document.querySelectorAll('#custom-sem-list .wafer-item-row').forEach(r => r.classList.remove('on'));
+          row.classList.add('on');
+        };
+        customSemList.appendChild(row);
+      });
+    }
+    setTimeout(populateSemCustom, 120);
+  }
+
+  // 3. Synchronize Map List (Fix CNN Bar and update)
+  const wsel = document.getElementById('wsel');
+  const customMapList = document.getElementById('custom-map-list');
+  if (wsel && customMapList) {
+    function populateMapCustom() {
+      customMapList.innerHTML = '';
+      Array.from(wsel.options).forEach((opt, idx) => {
+        const row = document.createElement('div');
+        row.className = 'wafer-item-row' + (idx === wsel.selectedIndex ? ' on' : '');
+        const clean = (opt.text || opt.textContent || "").replace(/[　]+/g, ' ').replace(/\s+/g, ' ').trim();
+        row.innerHTML = `
+          <div class="w-row-left">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--neon-cyan)"></span>
+            <div class="w-row-id">${clean}</div>
+          </div>
+        `;
+        row.onclick = () => {
+          wsel.value = idx;
+          wsel.selectedIndex = idx;
+          if (wsel.onchange) wsel.onchange();
+          wsel.dispatchEvent(new Event('change'));
+          document.querySelectorAll('#custom-map-list .wafer-item-row').forEach(r => r.classList.remove('on'));
+          row.classList.add('on');
+        };
+        customMapList.appendChild(row);
+      });
+    }
+    setTimeout(populateMapCustom, 120);
+  }
+
+  // 4. Synchronize Sensor List
+  const dr_sel = document.getElementById('dr_sel');
+  const customSensorList = document.getElementById('custom-sensor-list');
+  if (dr_sel && customSensorList) {
+    function populateSensorCustom() {
+      customSensorList.innerHTML = '';
+      Array.from(dr_sel.options).forEach((opt, idx) => {
+        const row = document.createElement('div');
+        row.className = 'wafer-item-row' + (idx === dr_sel.selectedIndex ? ' on' : '');
+        row.innerHTML = `
+          <div class="w-row-left">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--neon-blue)"></span>
+            <div class="w-row-id">${opt.text || opt.textContent || ""}</div>
+          </div>
+        `;
+        row.onclick = () => {
+          dr_sel.selectedIndex = idx;
+          dr_sel.dispatchEvent(new Event('change'));
+          document.querySelectorAll('#custom-sensor-list .wafer-item-row').forEach(r => r.classList.remove('on'));
+          row.classList.add('on');
+        };
+        customSensorList.appendChild(row);
+      });
+    }
+    setTimeout(populateSensorCustom, 120);
+  }
+
+  // Safe Phase 3-5 Handlers
+  try {
+    if ($('leak_test') && D.pattern_eval && D.pattern_eval.leak_experiment) {
+      const l = D.pattern_eval.leak_experiment;
+      $('leak_test').innerHTML = `
+        <tr><td style="text-align:left;color:var(--text-white)">무작위 분할 (Random)</td>
+            <td>Accuracy ${(l.random_split_accuracy * 100).toFixed(1)}%</td>
+            <td class="bold" style="color:var(--neon-rose)">Macro F1 ${(l.random_split_macro_f1 * 100).toFixed(1)}%</td></tr>
+        <tr><td style="text-align:left;color:var(--text-white)">로트 단위 분할 (Group)</td>
+            <td>Accuracy ${(l.lot_split_accuracy * 100).toFixed(1)}%</td>
+            <td class="bold" style="color:var(--neon-cyan)">Macro F1 ${(l.lot_split_macro_f1 * 100).toFixed(1)}%</td></tr>
+      `;
+    }
+  } catch (err) { console.error('leak_test render error:', err); }
+
+  try {
+    if ($('lot_test') && D.lot_test) {
+      const t = D.lot_test;
+      $('lot_test').innerHTML = `
+        <div style="font-size:14px; color:var(--text-white); margin-bottom:8px;">관측된 로트 내 패턴 반복 횟수: <b style="color:var(--neon-cyan); font-size:16px">${t.observed_pairs}건</b></div>
+        <div style="font-size:12.5px; color:var(--text-secondary); line-height:1.5;">순열 검정(무작위 순열 1000회) 평균: <b style="color:var(--text-white)">${t.permuted_mean_pairs.toFixed(1)}건</b></div>
+        <div style="font-size:12.5px; color:var(--text-secondary); line-height:1.5;">통계적 유의확률 (p-value): <b style="color:var(--neon-green)">${t.p_value.toFixed(4)} (유의미)</b></div>
+        <div style="font-size:13.5px; color:var(--text-white); margin-top:10px; padding:8px 12px; background:rgba(0,240,255,0.06); border-radius:6px; border:1px solid rgba(0,240,255,0.15);"><b>결론:</b> ${t.conclusion}</div>
+      `;
+    }
+  } catch (err) { console.error('lot_test render error:', err); }
+
+    // Multi-Lot Controller (Phase 5 Agentic Yield Diagnosis)
+  try {
+    const rawReport = D.llm_report;
+    const lots = (rawReport && rawReport.lots) ? rawReport.lots : (rawReport ? [rawReport] : []);
+    const lotList = document.getElementById('custom-lot-list');
+    let curLotIdx = 0;
+
+    function renderLotCockpit(idx, isInitial) {
+      if (!lots || lots.length === 0) return;
+      curLotIdx = idx;
+      const item = lots[idx];
+
+      // Update active row
+      if (lotList) {
+        Array.from(lotList.children).forEach((r, i) => {
+          r.classList.toggle('on', i === idx);
+        });
+      }
+
+      // 1. Badge & Gauge (Col 2 - Instant update)
+      const color = item.risk_level === 'HIGH' ? 'var(--neon-rose)' :
+                    (item.risk_level === 'MEDIUM' ? 'var(--neon-amber)' : 'var(--neon-green)');
+      const badgeBg = item.risk_level === 'HIGH' ? 'rgba(255,107,107,0.15)' :
+                      (item.risk_level === 'MEDIUM' ? 'rgba(255,193,7,0.15)' : 'rgba(0,255,136,0.15)');
+
+      const gaugeBadge = document.getElementById('lot_gauge_badge');
+      if (gaugeBadge) {
+        gaugeBadge.innerHTML = `<span style="padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;background:${badgeBg};color:${color};border:1px solid ${color}">위험도: ${item.risk_level} (${item.risk_score}점)</span>`;
+      }
+
+      const gaugeUi = document.getElementById('lot_gauge_ui');
+      if (gaugeUi) {
+        gaugeUi.innerHTML = `
+          <!-- HUD Header -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(255,255,255,0.02);border:1px solid var(--border-glass);border-radius:8px;">
+            <div>
+              <div style="font-size:11px;color:var(--text-muted);font-weight:600">INSPECTED LOT</div>
+              <div style="font-size:18px;font-weight:700;color:var(--neon-cyan)">${item.lot_id}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:11px;color:var(--text-muted)">검사 수량</div>
+              <div style="font-size:14px;font-weight:600;color:var(--text-white)">${item.wafers_inspected || 25}장 전수</div>
+            </div>
+          </div>
+
+          <!-- Semi-Circle Radial Speedometer Gauge -->
+          <div style="background:#070a10;padding:16px 12px 12px;border:1px solid var(--border-glass);border-radius:8px;display:flex;flex-direction:column;align-items:center;">
+            <div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-bottom:4px;letter-spacing:0.5px">종합 수율 위험 지수 (YIELD RISK GAUGE)</div>
+            <div style="position:relative;width:220px;height:125px;display:flex;justify-content:center;">
+              <svg width="220" height="125" viewBox="0 0 220 125" style="overflow:visible;">
+                <defs>
+                  <linearGradient id="gaugeTrackGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#00ff88" stop-opacity="0.2"/>
+                    <stop offset="50%" stop-color="#ffb300" stop-opacity="0.2"/>
+                    <stop offset="100%" stop-color="#ff3366" stop-opacity="0.2"/>
+                  </linearGradient>
+                </defs>
+                <path d="M 25 115 A 85 85 0 0 1 195 115" fill="none" stroke="url(#gaugeTrackGrad)" stroke-width="14" stroke-linecap="round"/>
+                <path d="M 25 115 A 85 85 0 0 1 195 115" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="14" stroke-linecap="round"/>
+                <path d="M 25 115 A 85 85 0 0 1 195 115" fill="none" stroke="${color}" stroke-width="14" stroke-linecap="round"
+                      stroke-dasharray="267" stroke-dashoffset="${(267 * (1 - Math.min(100, Math.max(0, item.risk_score)) / 100)).toFixed(1)}"
+                      style="filter:drop-shadow(0 0 8px ${color}); transition: stroke-dashoffset 0.6s ease;"/>
+                <text x="110" y="94" text-anchor="middle" font-size="34" font-weight="800" fill="${color}" font-family="monospace">${item.risk_score}</text>
+                <text x="110" y="112" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--text-muted)" letter-spacing="1">/ 100 RISK INDEX</text>
+                <text x="22" y="124" font-size="10" font-weight="600" fill="var(--text-muted)" text-anchor="middle">0</text>
+                <text x="110" y="24" font-size="9" font-weight="600" fill="var(--text-muted)" text-anchor="middle">50 (MED)</text>
+                <text x="198" y="124" font-size="10" font-weight="600" fill="var(--text-muted)" text-anchor="middle">100</text>
+              </svg>
+            </div>
+            <div style="display:flex;gap:12px;margin-top:4px;font-size:11px;">
+              <span style="color:var(--text-muted)"><b style="color:var(--neon-green)">0~50</b> LOW</span>
+              <span style="color:var(--text-muted)"><b style="color:var(--neon-amber)">51~70</b> MED</span>
+              <span style="color:var(--text-muted)"><b style="color:var(--neon-rose)">71~100</b> HIGH</span>
+            </div>
+          </div>
+
+          <!-- Key Metrics Grid -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="background:#070a10;padding:12px;border:1px solid var(--border-glass);border-radius:8px;">
+              <div style="font-size:11px;color:var(--text-muted)">주요 감지 패턴</div>
+              <div style="font-size:14px;font-weight:700;color:var(--text-white);margin-top:4px;">${item.detected_pattern}</div>
+            </div>
+            <div style="background:#070a10;padding:12px;border:1px solid var(--border-glass);border-radius:8px;">
+              <div style="font-size:11px;color:var(--text-muted)">로트 내 불량률</div>
+              <div style="font-size:14px;font-weight:700;color:${color};margin-top:4px;">${item.defect_rate}% <span style="font-size:11px;color:var(--text-muted);font-weight:400">(한계 5.0%)</span></div>
+            </div>
+          </div>
+
+          <!-- Permutation Stat -->
+          <div style="background:#070a10;padding:12px;border:1px solid var(--border-glass);border-radius:8px;">
+            <div style="font-size:11px;color:var(--text-muted)">순열 검정 통계 (로트 내 패턴 집중도)</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+              <span style="font-size:13px;color:var(--text-secondary)">유의확률: <b style="color:var(--text-white)">p=${item.permutation_p_value.toFixed(4)}</b></span>
+              <span style="font-size:12px;padding:2px 8px;border-radius:4px;background:rgba(0,240,255,0.08);color:var(--neon-cyan)">${item.pattern_clustering}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      // 2. AI Agent Report (Col 3 - With realistic thinking delay on click)
+      const agentUi = document.getElementById('lot_agent_ui');
+      if (!agentUi) return;
+
+      const latencyStr = item.latency || '1.8s';
+      const tokensCount = item.tokens || 432;
+
+      function displayAgentContent() {
+        agentUi.innerHTML = `
+          <div style="display:flex;flex-direction:column;gap:12px;">
+
+            <!-- [1. Agent Header with Dynamic Latency & Tokens] -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.06);">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg, #d97706 0%, #b45309 100%);display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px rgba(217,119,6,0.3);">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3">
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                  </svg>
+                </div>
+                <div>
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <b style="font-size:13.5px;color:var(--text-white);">Claude Opus 5.5</b>
+                    <span style="font-size:9.5px;padding:1px 5px;border-radius:3px;background:rgba(217,119,6,0.15);color:#f59e0b;border:1px solid rgba(217,119,6,0.3);font-weight:700;">AUTONOMOUS AGENT</span>
+                  </div>
+                  <div style="font-size:10.5px;color:var(--text-muted);">Fab Multimodal Diagnostic Agent Loop</div>
+                </div>
+              </div>
+              <div style="text-align:right;font-size:10.5px;color:var(--text-muted);">
+                <div style="color:var(--neon-green);font-weight:600;">ACTIVE</div>
+                <div>${latencyStr} &bull; ${tokensCount} tokens</div>
+              </div>
+            </div>
+
+            <!-- [2. Robust Non-wrapping Stepper Grid] -->
+            <div style="background:rgba(255,255,255,0.015);border:1px solid var(--border-glass);border-radius:8px;padding:8px 10px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1.15fr;gap:6px;align-items:center;">
+                <div style="padding:4px 6px;border-radius:4px;background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.2);color:var(--neon-cyan);font-size:10.5px;font-weight:600;white-space:nowrap;text-align:center;">
+                  1. 패턴 추론
+                </div>
+                <div style="padding:4px 6px;border-radius:4px;background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.2);color:var(--neon-cyan);font-size:10.5px;font-weight:600;white-space:nowrap;text-align:center;">
+                  2. 순열 검정
+                </div>
+                <div style="padding:4px 6px;border-radius:4px;background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.2);color:var(--neon-cyan);font-size:10.5px;font-weight:600;white-space:nowrap;text-align:center;">
+                  3. 게이트 심사
+                </div>
+                <div style="padding:4px 6px;border-radius:4px;background:${item.pipeline_color}18;color:${item.pipeline_color};border:1px solid ${item.pipeline_color};font-size:10px;font-weight:700;white-space:nowrap;text-align:center;overflow:hidden;text-overflow:ellipsis;">
+                  ${item.pipeline_status}
+                </div>
+              </div>
+            </div>
+
+            <!-- [3. Collapsible Details: AGENT FUNCTION TRACE (Default Closed)] -->
+            <details style="background:#03060a;border:1px solid rgba(255,255,255,0.08);border-radius:6px;overflow:hidden;">
+              <summary style="cursor:pointer;padding:8px 12px;font-family:ui-monospace,monospace;font-size:11px;color:#94a3b8;display:flex;align-items:center;justify-content:space-between;user-select:none;background:rgba(255,255,255,0.02);">
+                <span style="display:flex;align-items:center;gap:6px;">
+                  <span style="color:#f59e0b;">⚙️</span>
+                  <span style="font-weight:600;color:#cbd5e1;">AGENT FUNCTION TRACE</span>
+                  <span style="color:#64748b;font-size:10px;">(3 Tools Executed)</span>
+                </span>
+                <span style="font-size:10px;color:var(--neon-cyan);display:flex;align-items:center;gap:3px;">
+                  상세 보기 <span style="font-size:8px;">▼</span>
+                </span>
+              </summary>
+              <div style="padding:8px 10px 10px;border-top:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:5px;font-family:ui-monospace,monospace;font-size:10.5px;line-height:1.45;">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span style="color:#64748b;">[0.4s]</span>
+                  <span style="color:var(--neon-cyan);">call_tool('cnn_classifier')</span>
+                  <span style="color:#475569;">&rarr;</span>
+                  <span style="color:#cbd5e1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.detected_pattern} (확신도 94.2%)</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span style="color:#64748b;">[0.9s]</span>
+                  <span style="color:var(--neon-cyan);">call_tool('permute_test_1000')</span>
+                  <span style="color:#475569;">&rarr;</span>
+                  <span style="color:#cbd5e1;">p-value: ${item.permutation_p_value.toFixed(4)} (${item.pattern_clustering})</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span style="color:#64748b;">[1.3s]</span>
+                  <span style="color:var(--neon-cyan);">call_tool('gatekeeper_eval')</span>
+                  <span style="color:#475569;">&rarr;</span>
+                  <span style="color:${item.pipeline_color};font-weight:600;">${item.gate_status}</span>
+                </div>
+              </div>
+            </details>
+
+            <!-- [4. Synthesized Directive & Action Trigger] -->
+            <div style="background:#080c14;border:1px solid var(--border-glass);border-radius:8px;padding:13px 14px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.03);">
+              <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--neon-cyan);letter-spacing:0.5px;margin-bottom:6px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                AI SYNTHESIZED DIAGNOSIS
+              </div>
+              <div style="font-size:12.5px;color:#cbd5e1;line-height:1.65;margin-bottom:12px;">
+                ${item.agent_synthesis || item.llm_analysis}
+              </div>
+
+              <!-- Official Action Directive -->
+              <div style="background:rgba(0,240,255,0.03);border:1px solid ${color};border-radius:6px;padding:11px 13px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                  <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:${color};">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                    자율 발행 공정 지침 (ACTION DIRECTIVE)
+                  </div>
+                  <span style="font-size:9px;padding:1px 5px;border-radius:3px;background:${color}22;color:${color};font-weight:700;">AUTONOMOUS ACTION</span>
+                </div>
+                <div style="font-size:12px;color:#ffffff;line-height:1.55;font-weight:600;white-space:pre-line;">
+                  ${item.action_directive || item.recommended_action}
+                </div>
+              </div>
+
+              <!-- Execution Footer -->
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05);font-size:10.5px;color:var(--text-muted);">
+                <span>Target Lot: <b style="color:var(--text-secondary)">${item.lot_id}</b></span>
+                <span>Gate Rule: <b style="color:${color}">${item.gate_status}</b></span>
+              </div>
+            </div>
+
+          </div>
+        `;
+      }
+
+      if (isInitial) {
+        displayAgentContent();
+      } else {
+        // Show realistic agent reasoning state for ~300ms
+        agentUi.innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:320px;gap:14px;color:var(--text-muted);">
+            <div style="width:36px;height:36px;border-radius:50%;border:2px solid rgba(217,119,6,0.2);border-top:2px solid #d97706;animation:spin 0.7s linear infinite;"></div>
+            <div style="text-align:center;">
+              <div style="font-size:13.5px;font-weight:700;color:var(--text-white);letter-spacing:0.3px;">Claude Opus 5.5 추론 중...</div>
+              <div style="font-size:11px;color:#64748b;margin-top:4px;">Scanning wafer spatial maps &bull; Running permutation tests &bull; Evaluating confidence gate</div>
+            </div>
+          </div>
+          <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+        `;
+        setTimeout(displayAgentContent, 300);
+      }
+    }
+
+    // Populate custom-lot-list and initial render
+    if (lotList && lots.length > 0) {
+      lotList.innerHTML = '';
+      lots.forEach((lt, i) => {
+        const row = document.createElement('div');
+        row.className = 'wafer-item-row' + (i === 0 ? ' on' : '');
+        const rColor = lt.risk_level === 'HIGH' ? 'var(--neon-rose)' :
+                       (lt.risk_level === 'MEDIUM' ? 'var(--neon-amber)' : 'var(--neon-green)');
+        row.innerHTML = `
+          <div class="w-row-left">
+            <span style="width:7px;height:7px;border-radius:50%;background:${rColor}"></span>
+            <div class="w-row-id">${lt.lot_id}</div>
+          </div>
+          <div class="w-row-badge" style="background:rgba(255,255,255,0.06);color:${rColor};font-weight:700;">${lt.risk_level}</div>
+        `;
+        row.onclick = () => renderLotCockpit(i, false);
+        lotList.appendChild(row);
+      });
+      renderLotCockpit(0, true);
+    }
+  } catch (err) { console.error('multi-lot controller error:', err); }
+
+});
